@@ -2827,7 +2827,7 @@
   var hintTimer = null, hintFlash = "";
   function renderHint() {
     var text = hintFlash ||
-      (lift ? t("app_lift_hint") : NIGHT && expanded && zone === "grid" ? t("app_add_hint") : "");
+      (lift ? t("app_lift_hint") : NIGHT && !SPACE && expanded && zone === "grid" ? t("app_add_hint") : "");   // Space: no standing hint over the apps
     $("hint").textContent = text;
     $("hint").classList.toggle("on", !!text);
     document.documentElement.classList.toggle("hinting", !!text);
