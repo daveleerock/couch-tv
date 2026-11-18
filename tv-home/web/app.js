@@ -513,6 +513,7 @@
     if (SPACE) DOCK_APPS = 19;   // Space: four rows of five on the home, More apps the twentieth
     DOCK_BANNERS = NIGHT && (SPACE || (typeof ST.dock_banners === "boolean" ? ST.dock_banners : HOME.dock_banners === true));
     BANNER_ROW_REM = SPACE ? 15.625 : 10;   // Space: a 11.25rem banner and the 4.375rem gap under it
+    secsFix();
     CARDS = liveCards().concat(CARDS.filter(function (c) { return !c.live; }));
     document.documentElement.classList.toggle("dock-banners", DOCK_BANNERS);
     initSoundscape();
@@ -1445,10 +1446,10 @@
     a.classList.add("focus"); if (b) b.classList.add("focus");
   }
   // on the line: the headline nearest the strip's middle
-  function newsEnter() {
+  function newsEnter(fromRight) {
     var track = $("news-track"), strip = $("news-strip");
     if (!NEWS.length) return;
-    var mid = newsX + strip.clientWidth / 2, best = 0, bestD = Infinity;
+    var mid = newsX + strip.clientWidth * (fromRight ? 0.8 : 0.5), best = 0, bestD = Infinity;
     Array.prototype.forEach.call(track.children, function (el, k) {
       var d = Math.abs(el.offsetLeft + el.offsetWidth / 2 - mid);
       if (d < bestD) { bestD = d; best = k % NEWS.length; }
@@ -1543,7 +1544,7 @@
     if (!v) return;
     if (!liveUrls[liveTry]) { liveMsg(t("live_err")); livePlaying = false; return; }
     liveMsg("");
-    v.muted = !liveFull;
+    v.muted = !liveFull && !(zone === "live" && !liveSoundTimer);
     v.src = liveUrls[liveTry];
     livePlaying = true;
     var p = v.play();
@@ -1558,7 +1559,7 @@
   }
   // the picture plays only while it can be seen: not under an app, not with the apps scrolled up
   function liveWanted() {
-    return LIVE_ON && !covered() && (liveFull || !document.documentElement.classList.contains("space-low"));
+    return LIVE_ON && !covered();   // it goes on playing with the apps scrolled up, out of view
   }
   function liveLoad() {
     liveStop();
@@ -1567,7 +1568,7 @@
     try { window.TVNEWS.liveStream(liveCh().id); } catch (e) {}
   }
   function liveCheck() { if (liveWanted()) { if (!livePlaying) liveLoad(); } else if (livePlaying) liveStop(); }
-  function liveFetchGuide() { try { if (LIVE_ON && !covered()) window.TVNEWS.liveGuide(); } catch (e) {} }
+  function liveFetchGuide() {}   // the picture shows no programme details now; News.guide() stays for later
   function liveSwitch(d) {
     var n = Math.max(0, Math.min(LIVE_CH.length - 1, liveI + d));
     if (n === liveI) return false;
@@ -1587,6 +1588,15 @@
     el.classList.remove("quiet");
     clearTimeout(liveQuietTimer);
     liveQuietTimer = setTimeout(function () { el.classList.add("quiet"); }, 5000);
+  }
+  // sound while the remote rests on the picture: after a second, so passing over it stays quiet
+  var liveSoundTimer = 0;
+  function liveSound(on) {
+    clearTimeout(liveSoundTimer); liveSoundTimer = 0;
+    var v = $("live-video");
+    if (!v || liveFull) return;
+    if (!on) { v.muted = true; return; }
+    liveSoundTimer = setTimeout(function () { if (zone === "live" && !liveFull) v.muted = false; }, 1000);
   }
   var liveHome = null;
   function liveEnterFull() {
@@ -1609,6 +1619,7 @@
     if (liveHome) liveHome.insertBefore(el, liveHome.firstChild);
     if (v) { v.muted = true; var p = v.play(); if (p && p.catch) p.catch(function () {}); }
     liveCheck();
+    if (zone === "live") liveSound(true);
   }
   function liveSync() {
     LIVE_ON = SPACE && ST.live !== false && !!window.TVNEWS && typeof window.TVNEWS.liveStream === "function";
@@ -1632,7 +1643,6 @@
     if (!LIVE_ON) { if (liveFull) liveExitFull(); liveStop(); if (zone === "live") { zone = "grid"; g = 0; paintFocus(); } return; }
     renderLiveChips(); renderLiveInfo();
     liveFetchGuide();
-    liveGuideTimer = setInterval(liveFetchGuide, 3 * 60000);
     liveTickTimer = setInterval(function () { renderLiveInfo(); liveCheck(); }, 20000);
     liveLoad();
   }
@@ -3521,6 +3531,7 @@
     if ($("news")) $("news").classList.remove("focus");
     if (zone !== "news") newsLeave();
     if ($("live")) $("live").classList.remove("focus");
+    if (zone !== "live") liveSound(false);
     $("people").classList.remove("focus");
     Array.prototype.forEach.call($("people").children, function (el) { el.classList.remove("focus"); });
   }
@@ -3631,6 +3642,7 @@
     }
     if (zone === "live") {
       if (!liveVisible()) { zone = "grid"; paintFocus(); return; }
+      if (!$("live").classList.contains("focus") && !liveFull) liveSound(true);
       $("live").classList.add("focus");
       renderHint();
       return;
@@ -3763,30 +3775,30 @@
     if (zone === "live") {
       if (liveFull) { if (dx) liveSwitch(dx); else liveWake(); return; }
       if (dx) { liveSwitch(dx); paintFocus(); return; }
-      if (dy < 0 && hasQuick()) { zone = "quick"; qi = 0; }
-      else if (dy > 0) {
-        if (newsVisible()) { zone = "news"; newsEnter(); }
-        else if (gridEls.length) { zone = "grid"; g = Math.min(GRID_COLS, gridEls.length) - 1; }
-      }
+      if (dy < 0) { if (hasQuick()) { zone = "quick"; qi = 0; } else if (newsVisible()) { zone = "news"; newsEnter(true); } }
+      else if (dy > 0 && gridEls.length) { zone = "grid"; g = g < GRID_COLS ? Math.min(g, gridEls.length - 1) : Math.min(GRID_COLS, gridEls.length) - 1; }
       paintFocus();
       return;
     }
     if (zone === "news") {
-      if (dx) { newsI = (newsI + dx + NEWS.length) % NEWS.length; newsFocus(true); return; }
-      if (dy < 0 && liveVisible()) { newsLeave(); zone = "live"; }
-      else if (dy < 0 && hasQuick()) { newsLeave(); zone = "quick"; qi = 0; }
-      else if (dy > 0 && gridEls.length) { newsLeave(); zone = "grid"; g = g < GRID_COLS ? Math.min(g, gridEls.length - 1) : 0; }
+      // the line sits beside the settings button: right past the last headline goes on to it
+      if (dx > 0 && newsI >= NEWS.length - 1) { if (hasQuick()) { newsLeave(); zone = "quick"; qi = 0; paintFocus(); } return; }
+      if (dx) { newsI = Math.max(0, newsI + dx); newsFocus(true); return; }
+      if (dy > 0) {
+        newsLeave();
+        if (liveVisible()) zone = "live";
+        else if (gridEls.length) { zone = "grid"; g = 0; }
+      }
       paintFocus();
       return;
     }
     if (zone === "quick") {
       var nq = quickVisible().length;
-      if (dx < 0 && qi === 0) { if (peopleOn()) toPeople(); }
+      if (dx < 0 && qi === 0) { if (SPACE && newsVisible()) { zone = "news"; newsEnter(true); } else if (peopleOn()) toPeople(); }
       else if (dx) qi = Math.max(0, Math.min(nq - 1, qi + dx));
       else if (dy > 0) {
         // Space: nothing sits between the settings button and the apps (the cards' row is hidden)
         if (SPACE && liveVisible()) zone = "live";
-        else if (SPACE && newsVisible()) { zone = "news"; newsEnter(); }
         else if (SPACE && gridEls.length) { zone = "grid"; g = Math.min(GRID_COLS, gridEls.length) - 1; }
         else if (!NIGHT && npReach()) zone = "np";
         else if (peopleOn()) toPeople();
@@ -3805,7 +3817,7 @@
     } else if (zone === "shelf") {
       if (dx < 0 && s === 0 && NIGHT && npReach()) { zone = "np"; npI = Math.max(0, npButtons().length - 1); }
       else if (dx) s = Math.max(0, Math.min(shelfEls.length - 1, s + dx));
-      else if (dy < 0) { if (SPACE && newsVisible()) { zone = "news"; newsEnter(); } else if (SPACE && liveVisible()) zone = "live"; else if (peopleOn()) toPeople(); else if (!NIGHT && npReach()) zone = "np"; else if (hasQuick()) { zone = "quick"; qi = 0; } }
+      else if (dy < 0) { if (SPACE && liveVisible()) zone = "live"; else if (peopleOn()) toPeople(); else if (!NIGHT && npReach()) zone = "np"; else if (hasQuick()) { zone = "quick"; qi = 0; } }
       else if (dy > 0 && gridEls.length) {
         // land on the app under the show
         var b = shelfEls[s].getBoundingClientRect();
@@ -3829,8 +3841,7 @@
         }
       } else if (dy < 0 && row === 0) {
         // Space: the row above the apps is hidden; up goes straight to the settings button
-        if (SPACE && newsVisible() && !expanded) { zone = "news"; newsEnter(); }
-        else if (SPACE && liveVisible() && !expanded) zone = "live";
+        if (SPACE && liveVisible() && !expanded) zone = "live";
         else if (SPACE && hasQuick()) { zone = "quick"; qi = 0; }
         else if (cards.length) zone = "shelf";
         else if (npReach()) {
@@ -4185,6 +4196,13 @@
   // Saved on this TV (page storage and the launcher's own store, TVOS.keep) and, with a bridge,
   // also on the computer (/api/settings), so the phone and the TV agree.
   var ST_KEY = "tvhome.settings";
+  // Space shows no weather, so Home settings has no Weather section there
+  function secsFix() {
+    if (!Array.isArray(SECS)) return;
+    var wxAt = SECS.map(function (x) { return x[0]; }).indexOf("weather");
+    if (SPACE && wxAt >= 0) { SECS.splice(wxAt, 1); if (SET.sec >= SECS.length) SET.sec = 0; }
+    else if (!SPACE && wxAt < 0) SECS.splice(2, 0, ["weather", "cloud"]);
+  }
   var SECS = [["language", "globe"], ["location", "pin"], ["weather", "cloud"], ["look", "look"],
     ["apps", "apps"], ["people", "person"], ["quick", "bolt"], ["about", "info"]];
   var SET = { col: "secs", sec: 0, ri: 0, keyFocus: null, sub: null, lift: null, confirm: null, dirty: false, typing: null,
@@ -5280,6 +5298,7 @@
     }
     $("set-title").textContent = t("set_title");
     $("settings").classList.toggle("in-rows", SET.col === "rows");   // Space: the narrow panel shows one column at a time
+    secsFix();
     $("set-secs").innerHTML = SECS.map(function (sc, i) {
       var cls = "ssec" + (i === SET.sec ? (SET.col === "secs" ? " focus" : " on") : "");
       return '<div class="' + cls + '"><i>' + ICONS[sc[1]] + "</i><span>" + esc(t("sec_" + sc[0])) + "</span></div>";
