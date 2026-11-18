@@ -2025,48 +2025,130 @@ html.dock-mac.theme-night .app.hop { animation: dock-hop 520ms 1; }
 }
 
 /* ================= Space look (Home settings, Look; home.look "space") =================
-   The Night home over a turning Earth in a starry sky (space.js), Apple TV style: the clock and
-   the weather on the left, two rows of wide app banners, six to a row, without the dock's glass. */
-.space { display: none; }
-html.look-space .space { display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: #000; pointer-events: none; }
-html.look-space .scenes, html.look-space .bg, html.look-space .bgvid { display: none; }
-.space-stars { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-.space-globe, .space-still { position: absolute; left: 55rem; top: -7.5rem; width: 71.875rem; height: 71.875rem; }
+   The curve of the Earth at night under a moving aurora (space.js), with rows of five app banners
+   over it. Frosted glass everywhere: a milky tint and light edges, never a live blur of what is
+   behind (that is what a TV's graphics chip struggles with). The Earth stays put; only the apps
+   move, one row a step. */
+.space, .swx, .apps-title { display: none; }
+html.look-space .space { display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: #03050d; pointer-events: none; overflow: hidden; }
+html.look-space .scenes, html.look-space .bg, html.look-space .bgvid, html.look-space .weather-canvas, html.look-space .ambient-lighting { display: none; }
+.space-still, .space-globe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.space-still { object-fit: cover; }
 .space-globe { opacity: 0; transition: opacity 1.6s ease-out; }
 .space.ready .space-globe { opacity: 1; }
-/* no WebGL: the day map as a still disc, its right side in shadow */
-.space-still {
-  display: none; border-radius: 50%; transform: scale(0.92);
-  background: url("space/earth-day.jpg") 30% 50% / 200% 100%;
-  box-shadow: inset -16rem -2rem 10rem rgba(0, 0, 0, 0.94), 0 0 3rem rgba(80, 140, 255, 0.3);
+/* the aurora: four soft bands that drift and breathe, above the horizon. Only transform and opacity
+   move, so the TV paints each band once. */
+.aurora { position: absolute; top: 0; left: 0; width: 100%; height: 45%; }
+.aurora i { position: absolute; display: block; border-radius: 50%; will-change: transform, opacity; }
+.aurora .a1 { left: 22%; top: -40%; width: 50%; height: 105%; background: radial-gradient(closest-side, rgba(150, 70, 255, 0.55), rgba(150, 70, 255, 0)); animation: aur1 23s ease-in-out infinite alternate; }
+.aurora .a2 { left: 41%; top: -34%; width: 42%; height: 95%; background: radial-gradient(closest-side, rgba(40, 255, 190, 0.6), rgba(40, 255, 190, 0)); transform: rotate(14deg); animation: aur2 19s ease-in-out infinite alternate; }
+.aurora .a3 { left: 66%; top: -26%; width: 35%; height: 78%; background: radial-gradient(closest-side, rgba(170, 90, 255, 0.45), rgba(170, 90, 255, 0)); transform: rotate(22deg); animation: aur3 27s ease-in-out infinite alternate; }
+.aurora .a4 { left: 30%; top: -8%; width: 55%; height: 70%; border-radius: 0;
+  background: repeating-linear-gradient(100deg, rgba(130, 255, 215, 0.09) 0, rgba(130, 255, 215, 0) 0.5rem, rgba(130, 255, 215, 0) 1.6rem);
+  -webkit-mask-image: radial-gradient(closest-side, #000, transparent); mask-image: radial-gradient(closest-side, #000, transparent);
+  animation: aur4 31s linear infinite alternate; }
+@keyframes aur1 { from { transform: translate(-3%, 0) scale(1); opacity: 0.75; } to { transform: translate(5%, 6%) scale(1.12); opacity: 1; } }
+@keyframes aur2 { from { transform: rotate(14deg) translate(4%, 0); opacity: 1; } to { transform: rotate(8deg) translate(-6%, 5%); opacity: 0.6; } }
+@keyframes aur3 { from { transform: rotate(22deg) scale(0.95); opacity: 0.55; } to { transform: rotate(28deg) scale(1.1) translate(-5%, 3%); opacity: 0.95; } }
+@keyframes aur4 { from { transform: translateX(-6%); opacity: 0.5; } to { transform: translateX(6%); opacity: 1; } }
+html.lighter .aurora i { animation: none; }
+@media (prefers-reduced-motion: reduce) { .aurora i { animation: none; } }
+/* depth: darker corners, and the bottom darkened so the apps read */
+.space-shade { position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(180deg, rgba(3, 5, 13, 0) 58%, rgba(3, 5, 13, 0.72) 85%, rgba(3, 5, 13, 0.9) 100%),
+    radial-gradient(130% 100% at 60% 45%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.55) 100%); }
+html.look-space .scrim { display: none; }
+/* none of the Night home's own furniture */
+html.look-space .people-wrap, html.look-space .hero, html.look-space .time, html.look-space .date,
+html.look-space .place, html.look-space .shelf, html.look-space .np, html.look-space .quick-note { display: none; }
+
+/* frosted glass, as used everywhere in this look */
+html.look-space .swx, html.look-space .qbtn, html.look-space.dock-banners.theme-night .app .face, html.look-space .settings {
+  background: linear-gradient(155deg, rgba(170, 190, 235, 0.30) 0%, rgba(90, 110, 165, 0.26) 45%, rgba(45, 58, 100, 0.34) 100%);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: inset 0 0.09rem 0 rgba(255, 255, 255, 0.55), inset 0 -0.0625rem 0 rgba(255, 255, 255, 0.1), inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.18), 0 1.4rem 2.8rem rgba(0, 0, 0, 0.45);
 }
-html.look-space .scrim { background: linear-gradient(180deg, rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.6) 100%); }
-/* the clock and the weather, large on the left */
-html.look-space .time {
-  display: block; position: fixed; left: var(--safe-x); top: 9.25rem; margin: 0; text-align: left;
-  font-size: 9.5rem; line-height: 9.5rem; font-weight: 200; letter-spacing: -0.03em; color: #fff;
-  text-shadow: 0 0.25rem 2rem rgba(0, 0, 0, 0.5);
+
+/* the clock and the weather, top left */
+html.look-space .swx {
+  display: flex; align-items: center; gap: 2.25rem; position: absolute; left: 0; top: 0.25rem; height: 11.25rem; box-sizing: border-box;
+  padding: 0 2.625rem; border-radius: 2.5rem; overflow: hidden; text-shadow: 0 0.125rem 0.875rem rgba(0, 0, 0, 0.35);
+  transition: transform 380ms cubic-bezier(0.22, 0.8, 0.24, 1), opacity 380ms ease;
 }
-html.look-space .time small { font-size: 2.5rem; font-weight: 400; }
-html.look-space .date { left: var(--safe-x); right: auto; top: 19.75rem; text-align: left; font-size: 2.125rem; }
-html.look-space.glass .date .dline { padding: 0; background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
-/* the row above the apps: Live TV, small channel tiles (and Keep watching, when there is any) */
-html.look-space.theme-night .shelf { top: 27rem; left: 9.4375rem; right: 9.4375rem; }   /* lined up with the six banners */
-html.look-space .ncard.live {
-  width: 15.5rem; height: 7.5rem; padding: 1rem 1.25rem; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 0.125rem;
-  -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.14), 0 0.75rem 2rem rgba(0, 0, 0, 0.45);
-}
-html.look-space .ncard.live b { font-size: 1.875rem; line-height: 2.25rem; font-weight: 700; margin: 0; }
-html.look-space .ncard.live i { font-style: normal; font-size: 1.125rem; line-height: 1.5rem; color: rgba(255, 255, 255, 0.8); }
-html.look-space .ncard.live i::before { content: ""; display: inline-block; width: 0.625rem; height: 0.625rem; margin-right: 0.5rem; border-radius: 50%; background: #ff3b30; vertical-align: 0.05rem; }
-html.look-space .ncard.live.focus { transform: scale(1.08); box-shadow: 0 0 0 0.25rem #fff, 0 1.25rem 2.5rem rgba(0, 0, 0, 0.5); }
-html.look-space .shelf-track { gap: 1.625rem; }
-/* the apps: two rows of six wide banners, no glass panel behind them */
+html.look-space .swx::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4.4rem; background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0)); pointer-events: none; }
+.swx-time b { display: block; font-size: 4.875rem; line-height: 5.375rem; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.swx-time b small { font-size: 1.75rem; font-weight: 500; margin-left: 0.4rem; }
+.swx-time span { display: block; font-size: 1.75rem; line-height: 2.125rem; color: rgba(255, 255, 255, 0.88); }
+.swx-bar { width: 0.125rem; height: 6.75rem; background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0)); }
+.swx-icon svg { width: 5.25rem; height: 5.25rem; filter: drop-shadow(0 0.375rem 0.625rem rgba(0, 0, 0, 0.4)); }
+.swx-wx span { display: block; font-size: 1.5rem; line-height: 1.875rem; font-weight: 500; color: rgba(255, 255, 255, 0.9); }
+.swx-wx b { display: block; font-size: 3.875rem; line-height: 4.25rem; font-weight: 600; }
+.swx-wx small { display: block; font-size: 1.375rem; line-height: 1.75rem; color: rgba(255, 255, 255, 0.82); }
+/* the settings button, top right */
+html.look-space .quick { position: absolute; top: 0.25rem; right: 0; margin: 0; transition: transform 380ms cubic-bezier(0.22, 0.8, 0.24, 1), opacity 380ms ease; }
+html.look-space .qbtn { width: 5rem; height: 5rem; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+html.look-space .qbtn span { display: none; }
+html.look-space .qbtn svg { width: 2.375rem; height: 2.375rem; }
+html.look-space .qbtn.focus { box-shadow: inset 0 0.09rem 0 rgba(255, 255, 255, 0.55), 0 0 0 0.25rem #fff, 0 1.4rem 2.8rem rgba(0, 0, 0, 0.5); transform: none; background: linear-gradient(155deg, rgba(200, 215, 250, 0.42), rgba(60, 75, 125, 0.38)); color: #fff; }
+html.look-space .qbtn.dot::after { content: ""; position: absolute; top: 0.6rem; right: 0.6rem; width: 0.75rem; height: 0.75rem; border-radius: 50%; background: #ff453a; }
+/* from the third row the weather and the button slide away */
+html.look-space.space-low .swx, html.look-space.space-low .quick { transform: translateY(-20rem); opacity: 0; }
+
+/* the apps: rows of five 16:9 banners. The focused row stays at one height; the section moves. */
+html.look-space.dock-banners.theme-night .apps { top: 49.375rem; bottom: auto; left: 50%; transition: transform 380ms cubic-bezier(0.22, 0.8, 0.24, 1); }
+html.look-space.dock-banners.theme-night .apps-title { display: block; margin: -3.875rem 0 0 0.4rem; height: 3.875rem; font-size: 2.125rem; line-height: 2.5rem; font-weight: 650; text-shadow: 0 0.125rem 0.75rem rgba(0, 0, 0, 0.6); }
+html.look-space.expanded .apps-title { display: none; }
 html.look-space.theme-night .grid {
-  grid-auto-rows: 8.75rem; column-gap: 1.625rem; row-gap: 3rem; padding: 1.375rem 0;
+  grid-auto-rows: 11.25rem; column-gap: 2.5rem; row-gap: 4.375rem; padding: 0;
   background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
 }
-html.look-space.dock-banners.theme-night .app { width: 15.5rem; height: 8.75rem; }
-html.look-space.dock-banners.theme-night .app .face { border-radius: 1.25rem; box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.45); }
-html.look-space.theme-night .app:not(.focus) .face img { filter: none; }
-html.look-space.theme-night .app.focus { transform: scale(1.1) translateY(-0.5rem); }
+html.look-space.dock-banners.theme-night .app { width: 20rem; height: 11.25rem; }
+html.look-space.dock-banners.theme-night .app.focus, html.look-space.dock-banners.theme-night .app.focus.lifted { transform: none; }
+html.look-space.dock-banners.theme-night .app .label { display: none; }
+html.look-space.dock-banners.theme-night .app .face { position: relative; z-index: 1; border-radius: 1.875rem; overflow: hidden; }
+html.look-space.dock-banners.theme-night .app .face.banner { background: #0c1020; }
+html.look-space.dock-banners.theme-night .app:not(.focus) .face img { filter: none; }
+html.look-space.dock-banners.theme-night .app .face.banner img { width: 100%; height: 100%; object-fit: cover; }
+html.look-space.dock-banners.theme-night .app .face.icon img { width: 6rem; height: 6rem; border-radius: 1.25rem; box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.4); }
+html.look-space.dock-banners.theme-night .app .face.word { font-size: 2.125rem; font-weight: 700; color: #fff; }
+/* a pane of glass over every logo: light from the top edge, a thin bright rim */
+html.look-space.dock-banners.theme-night .app .face::after {
+  content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.06) 38%, rgba(255, 255, 255, 0) 60%);
+  box-shadow: inset 0 0.09rem 0 rgba(255, 255, 255, 0.6), inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.2);
+}
+/* the focused app: a white ring, a sweep of light across the glass, and its colour glowing under it */
+html.look-space.dock-banners.theme-night .app.focus .face { box-shadow: 0 0 0 0.25rem #fff, 0 1.6rem 3.4rem rgba(0, 0, 0, 0.55), 0 0.9rem 3.75rem var(--glow, #5a9cff); }
+html.look-space.dock-banners.theme-night .app.focus .face::before {
+  content: ""; position: absolute; left: -40%; top: -60%; width: 90%; height: 160%; z-index: 1; pointer-events: none;
+  background: linear-gradient(105deg, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0.3) 48%, rgba(255, 255, 255, 0) 62%); transform: rotate(8deg);
+}
+html.look-space.dock-banners.theme-night .app.focus::before {
+  content: ""; position: absolute; left: 8%; right: 8%; top: 9.5rem; height: 5.5rem; border-radius: 50%; z-index: 0;
+  background: radial-gradient(closest-side, var(--glow, #5a9cff), transparent); opacity: 0.85; filter: blur(1rem);
+}
+html.look-space.dock-banners.theme-night .app { position: relative; }
+html.look-space.dock-banners.theme-night .app .dot { z-index: 2; }
+
+/* Home settings: a frosted panel over the right third, the home blurred behind it */
+@keyframes set-in { from { transform: translateX(110%); } to { transform: translateX(0); } }
+html.look-space .settings {
+  left: auto; right: 1.5rem; top: 1.5rem; bottom: 1.5rem; width: 40rem; box-sizing: border-box;
+  grid-template-columns: minmax(0, 1fr); padding: 2.5rem 2.25rem; border-radius: 2.75rem; overflow: hidden;
+  box-shadow: inset 0 0.09rem 0 rgba(255, 255, 255, 0.55), inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.2), -1.875rem 0 5rem rgba(0, 0, 0, 0.5);
+}
+html.look-space .settings.on { animation: set-in 420ms cubic-bezier(0.22, 0.8, 0.24, 1); }
+html.look-space .settings .set-main { display: none; }
+html.look-space .settings.in-rows .set-side { display: none; }
+html.look-space .settings.in-rows .set-main { display: flex; }
+html.look-space .set-title { margin: 0.5rem 0 1.75rem 0.875rem; }
+html.look-space .ssec.focus, html.look-space .srow.focus {
+  background: linear-gradient(155deg, rgba(220, 230, 255, 0.34), rgba(140, 160, 215, 0.24)); color: #fff; transform: none;
+  box-shadow: inset 0 0.09rem 0 rgba(255, 255, 255, 0.6), 0 0 0 0.1875rem #fff, 0 0.875rem 1.875rem rgba(0, 0, 0, 0.4);
+}
+html.look-space .srow.focus .sl small, html.look-space .srow.focus .sv { color: rgba(255, 255, 255, 0.75); }
+html.look-space .srow { background: rgba(255, 255, 255, 0.06); }
+html.look-space .srow .sv { max-width: 42%; }
+html.look-space.setting .space, html.look-space.setting header.top, html.look-space.setting main.home {
+  filter: blur(0.875rem) brightness(0.62); transition: filter 420ms ease;
+}

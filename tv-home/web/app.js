@@ -510,8 +510,9 @@
     VIDEO_ON = !!VIDEO_URL && (typeof ST.video === "boolean" ? ST.video : true);
     GRID_COLS = NIGHT ? 12 : 8;
     DOCK_APPS = Math.max(1, Math.min(10, parseInt(HOME.dock_size, 10) || 10));
+    if (SPACE) DOCK_APPS = 19;   // Space: four rows of five on the home, More apps the twentieth
     DOCK_BANNERS = NIGHT && (SPACE || (typeof ST.dock_banners === "boolean" ? ST.dock_banners : HOME.dock_banners === true));
-    BANNER_ROW_REM = SPACE ? 11.75 : 10;
+    BANNER_ROW_REM = SPACE ? 15.625 : 10;   // Space: a 11.25rem banner and the 4.375rem gap under it
     CARDS = liveCards().concat(CARDS.filter(function (c) { return !c.live; }));
     document.documentElement.classList.toggle("dock-banners", DOCK_BANNERS);
     initSoundscape();
@@ -805,6 +806,7 @@
       var placeIdle = wIdle ? weatherPlace() : "";
       iwx.textContent = wIdle ? ([placeIdle, tempText(wIdle.temp), wxText(wIdle)].filter(Boolean).join(" · ")) : "";
     }
+    if (SPACE) spaceWeather(d, hm, h);
     var iov = $("idle-ambient-overlay");
     if (iov) iov.classList.toggle("quiet-hours", isQuietHours(SMART_IDLE.quiet_hours));
     fitDate();
@@ -1350,6 +1352,23 @@
 
   // The bridge's reading for the place in config.json, or straight from Open-Meteo with no bridge
   // or when Home settings chose another place. Hidden when Home settings switched the weather off.
+  // Space: the clock, the short date and the weather on one frosted card, top left
+  function spaceWeather(d, hm, h) {
+    var box = $("swx");
+    if (!box) return;
+    var loc = window.I18N ? window.I18N.locale() : "en-AU";
+    var wd = d.toLocaleDateString(loc, { weekday: "short" }).replace(".", "");
+    var dm = d.toLocaleDateString(loc, { day: "numeric", month: "short" }).replace(".", "");
+    var short = (wd.charAt(0).toUpperCase() + wd.slice(1)) + " " + dm;
+    var w = WX_SHOW && data.weather && data.weather.temp != null ? data.weather : null;
+    var html = '<div class="swx-time"><b>' + hm + (CLOCK24 ? "" : "<small>" + esc(h < 12 ? t("am") : t("pm")) + "</small>") + "</b><span>" + esc(short) + "</span></div>";
+    if (w) {
+      var hl = w.hi != null && w.lo != null ? "<small>\u2191 " + esc(tempText(w.hi)) + "\u2002\u2193 " + esc(tempText(w.lo)) + "</small>" : "<small>" + esc(wxText(w)) + "</small>";
+      html += '<i class="swx-bar"></i><span class="swx-icon">' + wxIcon(w) + '</span><div class="swx-wx"><span>' + esc(weatherPlace() || wxText(w)) + "</span><b>" + esc(tempText(w.temp)) + "</b>" + hl + "</div>";
+    }
+    box.innerHTML = html;
+  }
+
   function refreshWeather() {
     if (!NIGHT || !WX_SHOW) {
       updateAmbientWeather();
@@ -1370,10 +1389,12 @@
     82: "wx_heavy_showers", 95: "wx_storms", 96: "wx_storms", 99: "wx_storms" };
   function weatherDirect() {
     var url = "https://api.open-meteo.com/v1/forecast?latitude=" + WXCFG.lat + "&longitude=" + WXCFG.lon +
-      "&current=temperature_2m,weather_code,is_day&timezone=" + encodeURIComponent(WXCFG.timezone || "auto") + "&forecast_days=1";
+      "&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min&timezone=" + encodeURIComponent(WXCFG.timezone || "auto") + "&forecast_days=1";
     return fetch(url).then(function (r) { return r.json(); }).then(function (j) {
-      var c = j.current, code = Math.round(c.weather_code);
-      return { temp: Math.round(c.temperature_2m), code: code, text: "", is_day: !!c.is_day };
+      var c = j.current, code = Math.round(c.weather_code), dd = j.daily || {};
+      var hi = dd.temperature_2m_max && dd.temperature_2m_max[0], lo = dd.temperature_2m_min && dd.temperature_2m_min[0];
+      return { temp: Math.round(c.temperature_2m), code: code, text: "", is_day: !!c.is_day,
+        hi: isFinite(hi) ? Math.round(hi) : null, lo: isFinite(lo) ? Math.round(lo) : null };
     });
   }
 
@@ -1830,7 +1851,7 @@
   document.addEventListener("visibilitychange", function () { if (!document.hidden) devResume(); });
   document.addEventListener("webOSRelaunch", devResume);
   function quickVisible() {
-    return QUICK.filter(function (q) {
+    return (SPACE ? ["homesettings"] : QUICK).filter(function (q) {
       if (q === "sleep") return !OFFLINE || nativeSleep();
       if (q === "picture") return !OFFLINE && picShown;
       if (q === "look") return true;
@@ -1842,6 +1863,7 @@
       if (q === "bluetooth" || q === "network") return nativeSettingsScreen() || (ON_TV && !OFFLINE);
       if (q === "tvsettings") return !!(TV && (TV.launch || TV.openSettings)) || !OFFLINE;
       if (q === "extend") return devOn();
+      if (q === "homesettings") return true;
       return false;
     });
   }
@@ -1896,6 +1918,10 @@
         el.innerHTML = ICONS[q] + "<span>" + esc(t(q)) + "</span>";
       } else if (q === "tvsettings") {
         el.innerHTML = ICONS.gear + "<span>" + esc(t("gear_tv")) + "</span>";
+      } else if (q === "homesettings") {
+        el.innerHTML = ICONS.gear + "<span>" + esc(t("gear_home")) + "</span>";
+        el.setAttribute("aria-label", t("gear_home"));
+        el.classList.toggle("dot", updReady());
       }
     });
     var sv = $("q-screensaver");   // an icon only look (Night) still says what it is, to the eye and to a screen reader
@@ -2177,6 +2203,7 @@
     else if (q === "extend") devExtend();
     else if (q === "bluetooth" || q === "network") openSettingsScreen(q);
     else if (q === "tvsettings") openTvSettings();
+    else if (q === "homesettings") openSettings();
   }
   // Headphones: the TV's own Bluetooth screen. The launcher opens it itself, the on-TV app through
   // its /api/launch, and the bridge with a fixed ADB command (POST /api/bluetooth-audio, no body).
@@ -2513,7 +2540,8 @@
   ];
   function liveCards() {
     if (!SPACE) return [];
-    var src = Array.isArray(HOME.live_tv) ? HOME.live_tv : LIVE_DEFAULT;
+    if (!Array.isArray(HOME.live_tv)) return [];   // off unless home.live_tv lists channels (LIVE_DEFAULT is an example)
+    var src = HOME.live_tv;
     return src.filter(function (c) {
       return c && typeof c.name === "string" && /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$/.test(c.app || "") &&
         (!c.uri || /^https?:\/\/[^\s'"<>\\`$]+$/i.test(c.uri));
@@ -2639,7 +2667,7 @@
     var list = [];
     if (smartOn()) list.push(smartItem());
     if (devOn() && expanded) list.push(devItem());
-    list.push(gearItem());
+    if (!SPACE) list.push(gearItem());   // Space: Home settings is the round button top right
     return list;
   }
 
@@ -3057,14 +3085,22 @@
   // up a row at a time as the focus moves down into them (Keep watching fades out meanwhile).
   function slideDock() {
     var apps = $("apps-section") || $("grid").parentNode, el = document.documentElement;
+    if (SPACE) {
+      // Space: the focused row always sits at the same height; the whole section (More apps too) moves
+      // one row a step, over the Earth, which stays where it is. From the third row the weather and
+      // the settings button slide away.
+      var srow = zone === "grid" || zone === "gear" || zone === "appmenu" ? Math.floor(g / GRID_COLS) : 0;
+      apps.style.bottom = "";
+      apps.style.transform = "translateX(-50%) translateY(" + (-srow * BANNER_ROW_REM) + "rem)";
+      el.classList.toggle("space-low", srow >= 2);
+      return;
+    }
     var rows = DOCK_BANNERS && !expanded ? Math.ceil(gridEls.length / GRID_COLS) : 1;
     var row = rows > 1 && (zone === "grid" || zone === "gear" || zone === "appmenu") ? Math.floor(g / GRID_COLS) : 0;
-    el.classList.toggle("dock-down", row > (SPACE ? 1 : 0));
+    el.classList.toggle("dock-down", row > 0);
     if (rows <= 1) { apps.style.bottom = ""; apps.style.transform = ""; return; }
-    // Space: two rows show, as on an Apple TV; the focus moves the rows only below the second
-    var shown = SPACE ? 2 : 1;
-    apps.style.bottom = (2.875 - Math.max(0, rows - shown) * BANNER_ROW_REM) + "rem";
-    apps.style.transform = "translateX(-50%) translateY(" + (-Math.max(0, row - shown + 1) * BANNER_ROW_REM) + "rem)";
+    apps.style.bottom = (2.875 - (rows - 1) * BANNER_ROW_REM) + "rem";
+    apps.style.transform = "translateX(-50%) translateY(" + (-row * BANNER_ROW_REM) + "rem)";
   }
 
   // The Night dock tile's width in rem: a square icon, or a 16:9 TV banner as tall as the icon.
@@ -3074,7 +3110,7 @@
   // capped at 9.5rem so the dock never reaches the Keep watching cards above it.
   var DOCK_GAP_REM = 1.25, DOCK_ROW_REM = 112;
   function dockTileRem() {
-    if (DOCK_BANNERS) return SPACE ? 15.5 : 12.5;
+    if (DOCK_BANNERS) return SPACE ? 20 : 12.5;
     var n = DOCK_APPS + 2;
     var t = Math.floor((DOCK_ROW_REM - (n - 1) * DOCK_GAP_REM) / n * 8) / 8;
     return Math.max(7, Math.min(9.5, t));
@@ -3110,7 +3146,7 @@
     if (NIGHT) {
       // the dock is as wide as what is in it; More apps uses all twelve columns
       // wide banner tiles: six to a row; the dock shows its first row and the rest wait below the screen
-      GRID_COLS = DOCK_BANNERS ? Math.max(1, Math.min(BANNER_COLS, gridItems.length))
+      GRID_COLS = SPACE ? 5 : DOCK_BANNERS ? Math.max(1, Math.min(BANNER_COLS, gridItems.length))
         : expanded ? Math.min(12, Math.floor((DOCK_ROW_REM + DOCK_GAP_REM) / (dockTileRem() + DOCK_GAP_REM)))
         : Math.max(1, Math.min(12, gridItems.length));
       $("grid").style.gridTemplateColumns = "repeat(" + GRID_COLS + ", " + dockTileRem() + "rem)";
@@ -3124,6 +3160,10 @@
     }
     $("grid").innerHTML = gridItems.map(appHTML).join("");
     gridEls = Array.prototype.slice.call($("grid").children);
+    if (SPACE) {
+      gridEls.forEach(function (el, i) { var it = gridItems[i]; el.style.setProperty("--glow", (it && /^#[0-9a-f]{6}$/i.test(it.colour || "") ? it.colour : "#5a9cff")); });
+      $("apps-title").textContent = t("apps_title");
+    }
     if (NIGHT && !DOCK_BANNERS) {
       var tile = dockTileRem() + "rem";
       gridEls.forEach(function (el) { el.style.width = tile; el.style.height = tile; });
@@ -3853,6 +3893,7 @@
     clearFocus();
     $("settings").classList.add("on");
     document.documentElement.classList.add("setting");
+    if (SPACE && window.SpaceLook) window.SpaceLook.pause();
     renderSettings();
   }
   // Closing starts the page again when anything changed, so the look, scenes and words all agree.
@@ -3862,6 +3903,7 @@
     $("settings").classList.remove("on");
     document.documentElement.classList.remove("setting");
     zone = "grid";
+    if (SPACE && window.SpaceLook && active()) window.SpaceLook.resume();
     if (window.AmbientWeather) window.AmbientWeather.resume();
     if (SET.dirty) { SET.dirty = false; restart(); return; }
     paintFocus();
@@ -4871,6 +4913,7 @@
       else SET.col = "secs";
     }
     $("set-title").textContent = t("set_title");
+    $("settings").classList.toggle("in-rows", SET.col === "rows");   // Space: the narrow panel shows one column at a time
     $("set-secs").innerHTML = SECS.map(function (sc, i) {
       var cls = "ssec" + (i === SET.sec ? (SET.col === "secs" ? " focus" : " on") : "");
       return '<div class="' + cls + '"><i>' + ICONS[sc[1]] + "</i><span>" + esc(t("sec_" + sc[0])) + "</span></div>";
@@ -5465,7 +5508,7 @@
       var first = (Q.match(/[?&]scene=([a-z0-9]+)/) || [])[1];
       if (!first && SUN_SYNC) first = sunTargetScene();
       showScene(Math.max(0, SCENES.map(function (s) { return s.own ? "own" : s.id; }).indexOf(first)));
-      if (SPACE && window.SpaceLook) window.SpaceLook.start($("space"));
+      if (SPACE && window.SpaceLook) window.SpaceLook.start($("space"), { still: LIGHTER });
       else if (SCENES.length > 1) setInterval(nextScene, SCENE_MS);
       // the soft tap's audio context, made while the home is idle: made on the first key press it
       // cost that press 112 ms on an LG NANO83 (webOS 26), so the first press after every return

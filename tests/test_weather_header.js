@@ -53,6 +53,7 @@ function render(language) {
     CLOCK24: true,
     DATE_BARS: false,
     NIGHT: true,
+    SPACE: false,
     SUN_SYNC: false,
     SMART_IDLE: { quiet_hours: {} },
     quickReady: false,
