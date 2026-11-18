@@ -806,7 +806,7 @@
       var placeIdle = wIdle ? weatherPlace() : "";
       iwx.textContent = wIdle ? ([placeIdle, tempText(wIdle.temp), wxText(wIdle)].filter(Boolean).join(" · ")) : "";
     }
-    if (SPACE) spaceWeather(d, hm, h);
+    if (SPACE) spaceWeather(d, hm, h, day);
     var iov = $("idle-ambient-overlay");
     if (iov) iov.classList.toggle("quiet-hours", isQuietHours(SMART_IDLE.quiet_hours));
     fitDate();
@@ -1352,21 +1352,41 @@
 
   // The bridge's reading for the place in config.json, or straight from Open-Meteo with no bridge
   // or when Home settings chose another place. Hidden when Home settings switched the weather off.
-  // Space: the clock, the short date and the weather on one frosted card, top left
-  function spaceWeather(d, hm, h) {
+  // Space: the big clock behind the Earth, the date over it, and the weather alone on a frosted card
+  // top left with a 3D picture of it (CSS only: a sun, clouds, rain, snow, a storm or the moon)
+  function spaceWeather(d, hm, h, day) {
+    var ct = $("sc-time"), cd = $("sc-date");
+    if (ct) ct.innerHTML = hm + (CLOCK24 ? "" : "<small>" + esc(h < 12 ? t("am") : t("pm")) + "</small>");
+    if (cd) cd.textContent = day;
     var box = $("swx");
     if (!box) return;
-    var loc = window.I18N ? window.I18N.locale() : "en-AU";
-    var wd = d.toLocaleDateString(loc, { weekday: "short" }).replace(".", "");
-    var dm = d.toLocaleDateString(loc, { day: "numeric", month: "short" }).replace(".", "");
-    var short = (wd.charAt(0).toUpperCase() + wd.slice(1)) + " " + dm;
     var w = WX_SHOW && data.weather && data.weather.temp != null ? data.weather : null;
-    var html = '<div class="swx-time"><b>' + hm + (CLOCK24 ? "" : "<small>" + esc(h < 12 ? t("am") : t("pm")) + "</small>") + "</b><span>" + esc(short) + "</span></div>";
-    if (w) {
-      var hl = w.hi != null && w.lo != null ? "<small>\u2191 " + esc(tempText(w.hi)) + "\u2002\u2193 " + esc(tempText(w.lo)) + "</small>" : "<small>" + esc(wxText(w)) + "</small>";
-      html += '<i class="swx-bar"></i><span class="swx-icon">' + wxIcon(w) + '</span><div class="swx-wx"><span>' + esc(weatherPlace() || wxText(w)) + "</span><b>" + esc(tempText(w.temp)) + "</b>" + hl + "</div>";
-    }
-    box.innerHTML = html;
+    box.classList.toggle("none", !w);
+    if (!w) { box.innerHTML = ""; return; }
+    var hl = w.hi != null && w.lo != null ? " \u00b7 \u2191 " + esc(tempText(w.hi)) + "\u2002\u2193 " + esc(tempText(w.lo)) : "";
+    box.innerHTML = weather3d(w) + '<div class="swx-wx"><span>' + esc(weatherPlace() || "") + "</span><b>" + esc(tempText(w.temp)) +
+      "</b><small>" + esc(wxText(w)) + hl + "</small></div>";
+  }
+  function weather3d(w) {
+    var c = w.code, night = w.is_day === false, kind;
+    if (c === 0) kind = night ? "moon" : "sun";
+    else if (c === 1 || c === 2) kind = night ? "moon-cloud" : "sun-cloud";
+    else if (c >= 95) kind = "storm";
+    else if ((c >= 71 && c <= 77) || c === 85 || c === 86) kind = "snow";
+    else if (c >= 51) kind = "rain";
+    else kind = "cloud";
+    var puffs = '<i class="w3-cloud"><b></b><b></b><b></b><u></u></i>';
+    var html = {
+      "sun": '<i class="w3-sun"></i>',
+      "moon": '<i class="w3-moon"></i>',
+      "sun-cloud": '<i class="w3-sun small"></i>' + puffs,
+      "moon-cloud": '<i class="w3-moon small"></i>' + puffs,
+      "cloud": puffs,
+      "rain": puffs + '<i class="w3-drops"><b></b><b></b><b></b></i>',
+      "snow": puffs + '<i class="w3-flakes"><b></b><b></b><b></b></i>',
+      "storm": puffs.replace("w3-cloud", "w3-cloud dark") + '<i class="w3-bolt"></i>'
+    }[kind];
+    return '<span class="w3 w3k-' + kind + '">' + html + "</span>";
   }
 
   function refreshWeather() {
@@ -5510,7 +5530,7 @@
       var first = (Q.match(/[?&]scene=([a-z0-9]+)/) || [])[1];
       if (!first && SUN_SYNC) first = sunTargetScene();
       showScene(Math.max(0, SCENES.map(function (s) { return s.own ? "own" : s.id; }).indexOf(first)));
-      if (SPACE && window.SpaceLook) window.SpaceLook.start($("space"), { still: LIGHTER });
+      if (SPACE && window.SpaceLook) window.SpaceLook.start($("space"), { lighter: LIGHTER });
       else if (SCENES.length > 1) setInterval(nextScene, SCENE_MS);
       // the soft tap's audio context, made while the home is idle: made on the first key press it
       // cost that press 112 ms on an LG NANO83 (webOS 26), so the first press after every return

@@ -2030,10 +2030,19 @@ html.dock-mac.theme-night .app.hop { animation: dock-hop 520ms 1; }
    behind (that is what a TV's graphics chip struggles with). The Earth stays put; only the apps
    move, one row a step. */
 .space, .swx, .apps-title { display: none; }
-html.look-space .space { display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: #03050d; pointer-events: none; overflow: hidden; }
+html.look-space .space { display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: #03050d url("space/stars.jpg") center / cover no-repeat; pointer-events: none; overflow: hidden; }
 html.look-space .scenes, html.look-space .bg, html.look-space .bgvid, html.look-space .weather-canvas, html.look-space .ambient-lighting { display: none; }
 .space-still, .space-globe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 .space-still { object-fit: cover; }
+/* the big clock behind the Earth, as on an iPhone's lock screen: a little see-through */
+.space-clock { position: absolute; left: 0; right: 0; top: 14.5rem; text-align: center; }
+.space-clock p { margin: 0; }
+#sc-date { font-size: 2.125rem; line-height: 2.5rem; font-weight: 600; color: rgba(255, 255, 255, 0.78); text-shadow: 0 0.125rem 0.875rem rgba(0, 0, 0, 0.5); }
+#sc-time {
+  margin-top: -1rem; font-size: 25rem; line-height: 25rem; font-weight: 700; letter-spacing: -0.045em; font-variant-numeric: tabular-nums;
+  color: rgba(236, 242, 255, 0.62); text-shadow: 0 0 3.75rem rgba(140, 180, 255, 0.3);
+}
+#sc-time small { font-size: 5rem; font-weight: 600; letter-spacing: 0; margin-left: 1rem; }
 .space-globe { opacity: 0; transition: opacity 1.6s ease-out; }
 .space.ready .space-globe { opacity: 1; }
 /* the aurora: four soft bands that drift and breathe, above the horizon. Only transform and opacity
@@ -2063,26 +2072,53 @@ html.look-space .place, html.look-space .shelf, html.look-space .np, html.look-s
 
 /* frosted glass, as used everywhere in this look */
 html.look-space .swx, html.look-space .qbtn, html.look-space.dock-banners.theme-night .app .face, html.look-space .settings {
-  background: linear-gradient(155deg, rgba(170, 190, 235, 0.30) 0%, rgba(90, 110, 165, 0.26) 45%, rgba(45, 58, 100, 0.34) 100%);
+  background: linear-gradient(155deg, rgba(190, 205, 240, 0.16) 0%, rgba(110, 130, 185, 0.10) 45%, rgba(50, 64, 110, 0.16) 100%);
   -webkit-backdrop-filter: none; backdrop-filter: none;
   box-shadow: inset 0 0.09rem 0 rgba(255, 255, 255, 0.55), inset 0 -0.0625rem 0 rgba(255, 255, 255, 0.1), inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.18), 0 1.4rem 2.8rem rgba(0, 0, 0, 0.45);
 }
 
-/* the clock and the weather, top left */
+/* the weather alone, top left, with a 3D picture of it */
 html.look-space .swx {
-  display: flex; align-items: center; gap: 2.25rem; position: absolute; left: 0; top: 0.25rem; height: 11.25rem; box-sizing: border-box;
-  padding: 0 2.625rem; border-radius: 2.5rem; overflow: hidden; text-shadow: 0 0.125rem 0.875rem rgba(0, 0, 0, 0.35);
+  display: flex; align-items: center; gap: 1.75rem; position: absolute; left: 0; top: 0.25rem; height: 10.625rem; box-sizing: border-box;
+  padding: 0 2.25rem 0 1.75rem; border-radius: 2.5rem; text-shadow: 0 0.125rem 0.875rem rgba(0, 0, 0, 0.35);
   transition: transform 380ms cubic-bezier(0.22, 0.8, 0.24, 1), opacity 380ms ease;
 }
-html.look-space .swx::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4.4rem; background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0)); pointer-events: none; }
-.swx-time b { display: block; font-size: 4.875rem; line-height: 5.375rem; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.swx-time b small { font-size: 1.75rem; font-weight: 500; margin-left: 0.4rem; }
-.swx-time span { display: block; font-size: 1.75rem; line-height: 2.125rem; color: rgba(255, 255, 255, 0.88); }
-.swx-bar { width: 0.125rem; height: 6.75rem; background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0)); }
-.swx-icon svg { width: 5.25rem; height: 5.25rem; filter: drop-shadow(0 0.375rem 0.625rem rgba(0, 0, 0, 0.4)); }
+html.look-space .swx.none { display: none; }
 .swx-wx span { display: block; font-size: 1.5rem; line-height: 1.875rem; font-weight: 500; color: rgba(255, 255, 255, 0.9); }
-.swx-wx b { display: block; font-size: 3.875rem; line-height: 4.25rem; font-weight: 600; }
-.swx-wx small { display: block; font-size: 1.375rem; line-height: 1.75rem; color: rgba(255, 255, 255, 0.82); }
+.swx-wx b { display: block; font-size: 4rem; line-height: 4.375rem; font-weight: 650; letter-spacing: -0.02em; }
+.swx-wx small { display: block; font-size: 1.3125rem; line-height: 1.6875rem; color: rgba(255, 255, 255, 0.82); white-space: nowrap; }
+/* 3D weather: lit spheres and puffs, CSS only */
+.w3 { position: relative; flex: none; display: block; width: 7.5rem; height: 7.5rem; }
+.w3 i, .w3 b, .w3 u { position: absolute; display: block; }
+.w3-sun { left: 0.75rem; top: 0.75rem; width: 6rem; height: 6rem; border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, #fffbe0 0%, #ffe27a 22%, #ffbe2e 52%, #ff8f1c 80%, #e2620b 100%);
+  box-shadow: inset -0.5rem -0.6rem 1.1rem rgba(170, 60, 0, 0.45), inset 0.3rem 0.3rem 0.6rem rgba(255, 255, 240, 0.6), 0 0 2.75rem rgba(255, 170, 40, 0.75); }
+.w3-sun.small { left: 0; top: 0; width: 4.5rem; height: 4.5rem; }
+.w3-moon { left: 1rem; top: 1rem; width: 5.5rem; height: 5.5rem; border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #fbfbf6 0%, #e4e2d6 40%, #b9b6a8 78%, #8d8a7e 100%);
+  box-shadow: inset -0.7rem -0.6rem 1.1rem rgba(40, 40, 60, 0.5), 0 0 2.25rem rgba(220, 225, 255, 0.35); }
+.w3-moon.small { left: 0.25rem; top: 0; width: 4.25rem; height: 4.25rem; }
+.w3-cloud { left: 0.25rem; top: 1.25rem; width: 7rem; height: 4.5rem; filter: drop-shadow(0 0.4rem 0.5rem rgba(0, 0, 0, 0.45)); }
+.w3k-sun-cloud .w3-cloud, .w3k-moon-cloud .w3-cloud { left: 1rem; top: 2.5rem; width: 6.25rem; height: 4rem; }
+.w3-cloud b { border-radius: 50%; background: radial-gradient(circle at 36% 28%, #ffffff 0%, #eef3fb 38%, #c9d3e4 72%, #9aa8bf 100%);
+  box-shadow: inset -0.25rem -0.35rem 0.6rem rgba(40, 55, 85, 0.28); }
+.w3-cloud b:nth-child(1) { left: 8%; top: 34%; width: 42%; height: 65%; }
+.w3-cloud b:nth-child(2) { left: 28%; top: 0; width: 52%; height: 81%; }
+.w3-cloud b:nth-child(3) { left: 56%; top: 26%; width: 40%; height: 62%; }
+.w3-cloud u { left: 6%; top: 60%; width: 88%; height: 40%; border-radius: 1rem; background: linear-gradient(180deg, #f4f7fc 0%, #cfd8e7 70%, #a7b4c9 100%); }
+.w3-cloud.dark b { background: radial-gradient(circle at 36% 28%, #c9d0dc 0%, #8f9aad 45%, #5d677a 80%, #434b5a 100%); }
+.w3-cloud.dark u { background: linear-gradient(180deg, #a3acbb 0%, #6b7588 70%, #4a5263 100%); }
+.w3k-rain .w3-cloud, .w3k-snow .w3-cloud, .w3k-storm .w3-cloud { top: 0.5rem; }
+.w3-drops { left: 1.75rem; top: 5rem; width: 4.5rem; height: 2.5rem; }
+.w3-drops b { width: 0.9rem; height: 1.4rem; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; transform: rotate(18deg);
+  background: radial-gradient(circle at 35% 35%, #e8f6ff 0%, #7cc8ff 40%, #2b7fe0 100%); box-shadow: 0 0.25rem 0.5rem rgba(0, 40, 110, 0.4); }
+.w3-flakes { left: 1.75rem; top: 5.25rem; width: 4.5rem; height: 2.25rem; }
+.w3-flakes b { width: 1rem; height: 1rem; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffffff 0%, #e6f0ff 55%, #b7c8e6 100%); box-shadow: 0 0 0.6rem rgba(220, 235, 255, 0.8); }
+.w3-drops b:nth-child(1), .w3-flakes b:nth-child(1) { left: 0; top: 0; }
+.w3-drops b:nth-child(2), .w3-flakes b:nth-child(2) { left: 1.6rem; top: 0.8rem; }
+.w3-drops b:nth-child(3), .w3-flakes b:nth-child(3) { left: 3.2rem; top: 0; }
+.w3-bolt { left: 2.75rem; top: 4.25rem; width: 2rem; height: 3rem; background: linear-gradient(160deg, #fff6b0, #ffb21e);
+  clip-path: polygon(60% 0, 10% 54%, 45% 54%, 30% 100%, 90% 38%, 55% 38%); filter: drop-shadow(0 0 0.6rem rgba(255, 210, 60, 0.9)); }
 /* the settings button, top right */
 html.look-space .quick { position: absolute; top: 0.25rem; right: 0; margin: 0; transition: transform 380ms cubic-bezier(0.22, 0.8, 0.24, 1), opacity 380ms ease; }
 html.look-space .qbtn { width: 5rem; height: 5rem; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
@@ -2105,9 +2141,10 @@ html.look-space.dock-banners.theme-night .app { width: 20rem; height: 11.25rem; 
 html.look-space.dock-banners.theme-night .app.focus, html.look-space.dock-banners.theme-night .app.focus.lifted { transform: none; }
 html.look-space.dock-banners.theme-night .app .label { display: none; }
 html.look-space.dock-banners.theme-night .app .face { position: relative; z-index: 1; border-radius: 1.875rem; overflow: hidden; }
-html.look-space.dock-banners.theme-night .app .face.banner { background: #0c1020; }
+html.look-space.dock-banners.theme-night .app .face.banner { background: rgba(12, 16, 32, 0.35); }
 html.look-space.dock-banners.theme-night .app:not(.focus) .face img { filter: none; }
-html.look-space.dock-banners.theme-night .app .face.banner img { width: 100%; height: 100%; object-fit: cover; }
+html.look-space.dock-banners.theme-night .app .face.banner img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
+html.look-space.dock-banners.theme-night .app.focus .face.banner img { opacity: 0.95; }
 html.look-space.dock-banners.theme-night .app .face.icon img { width: 6rem; height: 6rem; border-radius: 1.25rem; box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.4); }
 html.look-space.dock-banners.theme-night .app .face.word { font-size: 2.125rem; font-weight: 700; color: #fff; }
 /* a pane of glass over every logo: light from the top edge, a thin bright rim */
@@ -2132,6 +2169,7 @@ html.look-space.dock-banners.theme-night .app .dot { z-index: 2; }
 /* Home settings: a frosted panel over the right third, the home blurred behind it */
 @keyframes set-in { from { transform: translateX(110%); } to { transform: translateX(0); } }
 html.look-space .settings {
+  background: linear-gradient(160deg, rgba(150, 170, 220, 0.30) 0%, rgba(70, 88, 140, 0.36) 50%, rgba(30, 40, 75, 0.5) 100%);
   left: auto; right: 1.5rem; top: 1.5rem; bottom: 1.5rem; width: 40rem; box-sizing: border-box;
   grid-template-columns: minmax(0, 1fr); padding: 2.5rem 2.25rem; border-radius: 2.75rem; overflow: hidden;
   box-shadow: inset 0 0.09rem 0 rgba(255, 255, 255, 0.55), inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.2), -1.875rem 0 5rem rgba(0, 0, 0, 0.5);
