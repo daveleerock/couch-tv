@@ -2194,3 +2194,19 @@ html.look-space .srow .sv { max-width: 42%; }
 html.look-space.setting .space, html.look-space.setting header.top, html.look-space.setting main.home {
   filter: blur(0.875rem) brightness(0.62); transition: filter 420ms ease;
 }
+
+/* hold OK on an app: the same frosted panel as Home settings, its rows lit like the settings rows */
+html.look-space .app-pop {
+  padding: 0.875rem; border-radius: 2.25rem; -webkit-backdrop-filter: none; backdrop-filter: none;
+  background: linear-gradient(160deg, rgba(150, 170, 220, 0.30) 0%, rgba(70, 88, 140, 0.36) 50%, rgba(30, 40, 75, 0.5) 100%);
+  box-shadow: inset 0 0.09rem 0 rgba(255, 255, 255, 0.55), inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.2), 0 1.5rem 3.75rem rgba(0, 0, 0, 0.5);
+}
+html.look-space .app-pop .grow { background: rgba(255, 255, 255, 0.06); box-shadow: none; }
+html.look-space .app-pop .grow.focus {
+  background: linear-gradient(155deg, rgba(220, 230, 255, 0.34), rgba(140, 160, 215, 0.24)); color: #fff; transform: none;
+  box-shadow: inset 0 0.09rem 0 rgba(255, 255, 255, 0.6), 0 0 0 0.1875rem #fff, 0 0.875rem 1.875rem rgba(0, 0, 0, 0.4);
+}
+html.look-space .app-pop .grow.focus small { color: rgba(255, 255, 255, 0.75); }
+/* the app being moved: lifted a little, with its ring, over the others */
+html.look-space.dock-banners.theme-night .app.lifted { z-index: 3; }
+html.look-space.dock-banners.theme-night .app.lifted .face { transform: translateY(-0.5rem); box-shadow: 0 0 0 0.25rem #fff, 0 2rem 4rem rgba(0, 0, 0, 0.6), 0 0.9rem 3.75rem var(--glow, #5a9cff); }

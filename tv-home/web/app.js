@@ -2828,7 +2828,7 @@
   var hintTimer = null, hintFlash = "";
   function renderHint() {
     var text = hintFlash ||
-      (lift ? t("app_lift_hint") : NIGHT && !SPACE && expanded && zone === "grid" ? t("app_add_hint") : "");   // Space: no standing hint over the apps
+      (lift ? (SPACE ? "" : t("app_lift_hint")) : NIGHT && !SPACE && expanded && zone === "grid" ? t("app_add_hint") : "");   // Space: no standing hint over the apps
     $("hint").textContent = text;
     $("hint").classList.toggle("on", !!text);
     document.documentElement.classList.toggle("hinting", !!text);
@@ -2867,7 +2867,7 @@
     }).join("");
     pop.classList.add("on");
     document.documentElement.classList.add("apping");
-    hintFlash = t("ctx_hint"); renderHint();
+    if (!SPACE) { hintFlash = t("ctx_hint"); renderHint(); }   // Space: the menu speaks for itself
     var el = gridEls[g], rem = innerWidth / 120;
     if (el) {
       var b = el.getBoundingClientRect(), w = pop.offsetWidth;
@@ -3024,6 +3024,19 @@
   }
   function moveLift(dx, dy) {
     var o = data.order, i = o.packages.indexOf(lift.pkg);
+    if (SPACE) {
+      // Space: the app moves anywhere in the grid. Left and right a place, up and down a row; the
+      // others close up behind it. It stops at the edges of its row, the top row and the last place.
+      var col = i % GRID_COLS, j = i;
+      if (dx) j = (dx > 0 ? col < GRID_COLS - 1 : col > 0) ? i + dx : i;
+      else if (dy) j = Math.max(0, Math.min(o.line - 1, i + dy * GRID_COLS));
+      if (dy < 0 && i < GRID_COLS) j = i;   // already on the top row
+      if (dy > 0 && Math.floor(i / GRID_COLS) === Math.floor((o.line - 1) / GRID_COLS)) j = i;   // already on the last row
+      if (j !== i) { o.packages.splice(i, 1); o.packages.splice(j, 0, lift.pkg); g = j; }
+      renderGrid();
+      paintFocus();
+      return;
+    }
     if (dx) {
       var j = i + dx;
       if (j >= 0 && j < o.line) { o.packages[i] = o.packages[j]; o.packages[j] = lift.pkg; g = j; }
