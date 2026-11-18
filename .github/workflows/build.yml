@@ -49,7 +49,10 @@ jobs:
           DEBUG_KEYSTORE: ${{ secrets.DEBUG_KEYSTORE }}
         run: |
           if [ -n "$DEBUG_KEYSTORE" ]; then
-            printf '%s' "$DEBUG_KEYSTORE" | base64 -d > "$RUNNER_TEMP/ci.keystore"
+            # pasted by hand into GitHub: drop any spaces or line breaks the copy added
+            k=$(printf '%s' "$DEBUG_KEYSTORE" | tr -cd 'A-Za-z0-9+/=')
+            echo "key text: ${#k} characters (3556 expected)"
+            printf '%s' "$k" | base64 -d > "$RUNNER_TEMP/ci.keystore"
             echo "COUCHTV_KEYSTORE=$RUNNER_TEMP/ci.keystore" >> "$GITHUB_ENV"
           fi
 
