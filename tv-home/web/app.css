@@ -2023,3 +2023,40 @@ html.dock-mac.theme-night .app.hop { animation: dock-hop 520ms 1; }
   html.dock-mac.theme-night .app, html.dock-mac.theme-night .grid, html.dock-mac.theme-night .app .label { transition: none; }
   html.dock-mac.theme-night .app.hop { animation: none; }
 }
+
+/* ================= Space look (Home settings, Look; home.look "space") =================
+   The Night home over a turning Earth in a starry sky (space.js), Apple TV style: the clock and
+   the weather on the left, two rows of wide app banners, six to a row, without the dock's glass. */
+.space { display: none; }
+html.look-space .space { display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: #000; pointer-events: none; }
+html.look-space .scenes, html.look-space .bg, html.look-space .bgvid { display: none; }
+.space-stars { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.space-globe, .space-still { position: absolute; left: 55rem; top: -7.5rem; width: 71.875rem; height: 71.875rem; }
+.space-globe { opacity: 0; transition: opacity 1.6s ease-out; }
+.space.ready .space-globe { opacity: 1; }
+/* no WebGL: the day map as a still disc, its right side in shadow */
+.space-still {
+  display: none; border-radius: 50%; transform: scale(0.92);
+  background: url("space/earth-day.jpg") 30% 50% / 200% 100%;
+  box-shadow: inset -16rem -2rem 10rem rgba(0, 0, 0, 0.94), 0 0 3rem rgba(80, 140, 255, 0.3);
+}
+html.look-space .scrim { background: linear-gradient(180deg, rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.6) 100%); }
+/* the clock and the weather, large on the left */
+html.look-space .time {
+  display: block; position: fixed; left: var(--safe-x); top: 9.25rem; margin: 0; text-align: left;
+  font-size: 9.5rem; line-height: 9.5rem; font-weight: 200; letter-spacing: -0.03em; color: #fff;
+  text-shadow: 0 0.25rem 2rem rgba(0, 0, 0, 0.5);
+}
+html.look-space .time small { font-size: 2.5rem; font-weight: 400; }
+html.look-space .date { left: var(--safe-x); right: auto; top: 19.75rem; text-align: left; font-size: 2.125rem; }
+html.look-space.glass .date .dline { padding: 0; background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+html.look-space .shelf { display: none; }
+/* the apps: two rows of six wide banners, no glass panel behind them */
+html.look-space.theme-night .grid {
+  grid-auto-rows: 8.75rem; column-gap: 1.625rem; row-gap: 3rem; padding: 1.375rem 0;
+  background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+html.look-space.dock-banners.theme-night .app { width: 15.5rem; height: 8.75rem; }
+html.look-space.dock-banners.theme-night .app .face { border-radius: 1.25rem; box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.45); }
+html.look-space.theme-night .app:not(.focus) .face img { filter: none; }
+html.look-space.theme-night .app.focus { transform: scale(1.1) translateY(-0.5rem); }

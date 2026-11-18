@@ -62,6 +62,7 @@
   var ON_TV = false;   // served by the on-TV app (config "mode"), which can open the TV's own settings screens
   // The look: ?theme= for a preview, then Home settings (or the Look button) on this TV, then home.look.
   var THEME = "night", NIGHT = true, OLED = false, CLOCK24 = false;
+  var SPACE = false;   // home.look "space": the Night home over a turning Earth (space.js), with a grid of wide banners
   // OLED burn-in protection: micro-shift (±2px) every 60 seconds in the OLED look. The Smart Idle
   // ambient clock uses wider steps (±4px) while it is on screen.
   var OLED_SHIFT_STEPS = [[0,0], [1,1], [-1,1], [2,-1], [-1,-1], [1,-2], [-2,0], [0,1]];
@@ -467,8 +468,10 @@
     QUICK = (Array.isArray(ST.quick) ? ST.quick : TVCFG.quick || ["sleep", "picture"])
       .filter(function (q, i, a) { return QUICK_ALL.indexOf(q) >= 0 && a.indexOf(q) === i; });
     THEME = (Q.match(/[?&]theme=([a-z]+)/) || [])[1] || lookSetting();
+    SPACE = THEME === "space";
     if (THEME !== "classic" && THEME !== "oled") THEME = "night";
     NIGHT = THEME === "night";
+    document.documentElement.classList.toggle("look-space", SPACE);
     OLED = THEME === "oled";
     document.documentElement.classList.toggle("theme-night", NIGHT);
     document.documentElement.classList.toggle("theme-oled", OLED);
@@ -507,7 +510,8 @@
     VIDEO_ON = !!VIDEO_URL && (typeof ST.video === "boolean" ? ST.video : true);
     GRID_COLS = NIGHT ? 12 : 8;
     DOCK_APPS = Math.max(1, Math.min(10, parseInt(HOME.dock_size, 10) || 10));
-    DOCK_BANNERS = NIGHT && (typeof ST.dock_banners === "boolean" ? ST.dock_banners : HOME.dock_banners === true);
+    DOCK_BANNERS = NIGHT && (SPACE || (typeof ST.dock_banners === "boolean" ? ST.dock_banners : HOME.dock_banners === true));
+    BANNER_ROW_REM = SPACE ? 11.75 : 10;
     document.documentElement.classList.toggle("dock-banners", DOCK_BANNERS);
     initSoundscape();
     if (smartOn()) DOCK_APPS = Math.min(DOCK_APPS, 9);   // the Smart home tile takes one place in the dock
@@ -531,7 +535,7 @@
   }
   function lookSetting() {
     var l = ST.look || kept("tvhome.look") || HOME.look || "night";
-    return (l === "classic" || l === "oled") ? l : "night";
+    return (l === "classic" || l === "oled" || l === "space") ? l : "night";
   }
   function glassAmount() {
     var n = parseInt(ST.glass_amount != null ? ST.glass_amount : HOME.glass_amount, 10);
@@ -3026,8 +3030,10 @@
     var row = rows > 1 && (zone === "grid" || zone === "gear" || zone === "appmenu") ? Math.floor(g / GRID_COLS) : 0;
     el.classList.toggle("dock-down", row > 0);
     if (rows <= 1) { apps.style.bottom = ""; apps.style.transform = ""; return; }
-    apps.style.bottom = (2.875 - (rows - 1) * BANNER_ROW_REM) + "rem";
-    apps.style.transform = "translateX(-50%) translateY(" + (-row * BANNER_ROW_REM) + "rem)";
+    // Space: two rows show, as on an Apple TV; the focus moves the rows only below the second
+    var shown = SPACE ? 2 : 1;
+    apps.style.bottom = (2.875 - Math.max(0, rows - shown) * BANNER_ROW_REM) + "rem";
+    apps.style.transform = "translateX(-50%) translateY(" + (-Math.max(0, row - shown + 1) * BANNER_ROW_REM) + "rem)";
   }
 
   // The Night dock tile's width in rem: a square icon, or a 16:9 TV banner as tall as the icon.
@@ -3037,7 +3043,7 @@
   // capped at 9.5rem so the dock never reaches the Keep watching cards above it.
   var DOCK_GAP_REM = 1.25, DOCK_ROW_REM = 112;
   function dockTileRem() {
-    if (DOCK_BANNERS) return 12.5;
+    if (DOCK_BANNERS) return SPACE ? 15.5 : 12.5;
     var n = DOCK_APPS + 2;
     var t = Math.floor((DOCK_ROW_REM - (n - 1) * DOCK_GAP_REM) / n * 8) / 8;
     return Math.max(7, Math.min(9.5, t));
@@ -4002,7 +4008,7 @@
   var SECS_STEPS = [10, 15, 20, 30, 45, 60, 120];
   function lookRows() {
     var look = lookSetting(), st = sceneState(), rows = [head(t("look_head"))];
-    ["night", "oled", "classic"].forEach(function (id) {
+    ["night", "space", "oled", "classic"].forEach(function (id) {
       rows.push({ kind: "choice", key: "look:" + id, label: t("look_" + id), sub: t("look_" + id + "_sub"), checked: look === id,
         act: function () { ST.look = id; keep("tvhome.look", id); saveSettings(); } });
     });
@@ -5375,9 +5381,9 @@
     noDream: function () { note(t("no_dream")); },
     // the remote's Settings/gear key, caught by the launcher natively (MainActivity.dispatchKeyEvent)
     settingsKey: function () { blip(0, 0); settingsKey(); },
-    resume: function () { PAGE_PAUSED = false; clock(); toggleScreenOff(false); setIdleAmbient(false); resetSmartIdle(); okReset(); refresh(); if (!OFFLINE) refreshQuick(); refreshWeather(); startVideo(); sceneVideos(true); refreshMusic(); refreshCards(true); if (window.AmbientWeather) window.AmbientWeather.resume(); resetIdlePhoto(); },
+    resume: function () { PAGE_PAUSED = false; clock(); toggleScreenOff(false); setIdleAmbient(false); resetSmartIdle(); okReset(); refresh(); if (!OFFLINE) refreshQuick(); refreshWeather(); startVideo(); sceneVideos(true); refreshMusic(); refreshCards(true); if (window.AmbientWeather) window.AmbientWeather.resume(); if (SPACE && window.SpaceLook) window.SpaceLook.resume(); resetIdlePhoto(); },
     // an app is in front: the video background stops until the home is back
-    pause: function () { saveFocusNow(); PAGE_PAUSED = true; pauseVideo(); },
+    pause: function () { saveFocusNow(); PAGE_PAUSED = true; pauseVideo(); if (window.SpaceLook) window.SpaceLook.pause(); },
     // the launcher's file picker has copied the chosen photos into its own storage (Home settings)
     photosAdded: function (names) { photosAdded(names); },
     // the launcher's updater has news (Updater.kt)
@@ -5428,7 +5434,8 @@
       var first = (Q.match(/[?&]scene=([a-z0-9]+)/) || [])[1];
       if (!first && SUN_SYNC) first = sunTargetScene();
       showScene(Math.max(0, SCENES.map(function (s) { return s.own ? "own" : s.id; }).indexOf(first)));
-      if (SCENES.length > 1) setInterval(nextScene, SCENE_MS);
+      if (SPACE && window.SpaceLook) window.SpaceLook.start($("space"));
+      else if (SCENES.length > 1) setInterval(nextScene, SCENE_MS);
       // the soft tap's audio context, made while the home is idle: made on the first key press it
       // cost that press 112 ms on an LG NANO83 (webOS 26), so the first press after every return
       // from an app lagged
