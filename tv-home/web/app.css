@@ -2050,7 +2050,17 @@ html.look-space .time {
 html.look-space .time small { font-size: 2.5rem; font-weight: 400; }
 html.look-space .date { left: var(--safe-x); right: auto; top: 19.75rem; text-align: left; font-size: 2.125rem; }
 html.look-space.glass .date .dline { padding: 0; background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
-html.look-space .shelf { display: none; }
+/* the row above the apps: Live TV, small channel tiles (and Keep watching, when there is any) */
+html.look-space.theme-night .shelf { top: 27rem; left: 9.4375rem; right: 9.4375rem; }   /* lined up with the six banners */
+html.look-space .ncard.live {
+  width: 15.5rem; height: 7.5rem; padding: 1rem 1.25rem; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 0.125rem;
+  -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.14), 0 0.75rem 2rem rgba(0, 0, 0, 0.45);
+}
+html.look-space .ncard.live b { font-size: 1.875rem; line-height: 2.25rem; font-weight: 700; margin: 0; }
+html.look-space .ncard.live i { font-style: normal; font-size: 1.125rem; line-height: 1.5rem; color: rgba(255, 255, 255, 0.8); }
+html.look-space .ncard.live i::before { content: ""; display: inline-block; width: 0.625rem; height: 0.625rem; margin-right: 0.5rem; border-radius: 50%; background: #ff3b30; vertical-align: 0.05rem; }
+html.look-space .ncard.live.focus { transform: scale(1.08); box-shadow: 0 0 0 0.25rem #fff, 0 1.25rem 2.5rem rgba(0, 0, 0, 0.5); }
+html.look-space .shelf-track { gap: 1.625rem; }
 /* the apps: two rows of six wide banners, no glass panel behind them */
 html.look-space.theme-night .grid {
   grid-auto-rows: 8.75rem; column-gap: 1.625rem; row-gap: 3rem; padding: 1.375rem 0;

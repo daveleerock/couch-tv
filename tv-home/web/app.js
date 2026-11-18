@@ -512,6 +512,7 @@
     DOCK_APPS = Math.max(1, Math.min(10, parseInt(HOME.dock_size, 10) || 10));
     DOCK_BANNERS = NIGHT && (SPACE || (typeof ST.dock_banners === "boolean" ? ST.dock_banners : HOME.dock_banners === true));
     BANNER_ROW_REM = SPACE ? 11.75 : 10;
+    CARDS = liveCards().concat(CARDS.filter(function (c) { return !c.live; }));
     document.documentElement.classList.toggle("dock-banners", DOCK_BANNERS);
     initSoundscape();
     if (smartOn()) DOCK_APPS = Math.min(DOCK_APPS, 9);   // the Smart home tile takes one place in the dock
@@ -2454,7 +2455,8 @@
     // custom cards keep the row (and its heading) even with Keep watching switched off
     document.documentElement.classList.toggle("kw-off", !KW_ON && !CARDS.length);
     var following = followName();
-    $("shelf-title").textContent = following ? t("recently_on", { app: following }) : t(data.shows.length || !CARDS.length ? "keep_watching" : "custom_cards");
+    $("shelf-title").textContent = following ? t("recently_on", { app: following }) :
+      SPACE && !data.shows.length && CARDS.length ? t("live_tv") : t(data.shows.length || !CARDS.length ? "keep_watching" : "custom_cards");
     shelfShown = shelfKey();
     renderPeople();
     if (!KW_ON) { track.innerHTML = ""; shelfEls = []; addCards(track); return; }   // row switched off: only the custom cards, if any
@@ -2498,6 +2500,28 @@
   // with textContent, an image only from an http(s) link, and OK opens an installed app or an http(s)
   // link through the same /api/launch the app tiles use. Off (no cards, no fetching) unless set.
   var CARDS = [];
+  // Space look: the Live TV row, channel shortcuts that open the channel in its own app (home.live_tv,
+  // a list of {name, app, uri, colour}; left out, Sweden's SVT and TV4 channels). They lead the row,
+  // before any custom cards.
+  var LIVE_DEFAULT = [
+    { name: "SVT1", app: "se.svt.android.svtplay", uri: "https://www.svtplay.se/kanaler/svt1?start=auto", colour: "#1f6fd6" },
+    { name: "SVT2", app: "se.svt.android.svtplay", uri: "https://www.svtplay.se/kanaler/svt2?start=auto", colour: "#2e9e5b" },
+    { name: "SVT24", app: "se.svt.android.svtplay", uri: "https://www.svtplay.se/kanaler/svt24?start=auto", colour: "#c2452d" },
+    { name: "Barnkanalen", app: "se.svt.android.svtplay", uri: "https://www.svtplay.se/kanaler/svtbarn?start=auto", colour: "#e0a21c" },
+    { name: "Kunskapskanalen", app: "se.svt.android.svtplay", uri: "https://www.svtplay.se/kanaler/kunskapskanalen?start=auto", colour: "#6b4fc8" },
+    { name: "TV4", app: "se.tv4.tv4playtab", uri: "https://www.tv4play.se/kanaler/tv4", colour: "#d4145a" }
+  ];
+  function liveCards() {
+    if (!SPACE) return [];
+    var src = Array.isArray(HOME.live_tv) ? HOME.live_tv : LIVE_DEFAULT;
+    return src.filter(function (c) {
+      return c && typeof c.name === "string" && /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$/.test(c.app || "") &&
+        (!c.uri || /^https?:\/\/[^\s'"<>\\`$]+$/i.test(c.uri));
+    }).slice(0, 8).map(function (c) {
+      return { title: c.name.slice(0, 24), app: c.app, link: c.uri || "", live: true,
+        colour: /^#[0-9a-f]{3,8}$/i.test(c.colour || "") ? c.colour : "#2a2f45" };
+    });
+  }
   function cardAt(i) { return i >= data.shows.length ? CARDS[i - data.shows.length] || null : null; }
   function addCards(track) {
     CARDS.forEach(function (c) {
@@ -2516,7 +2540,12 @@
         parent.appendChild(n);
         return n;
       };
-      if (NIGHT) {
+      if (c.live) {
+        el.className = "tile ncard ccard live";
+        el.style.background = "linear-gradient(135deg, " + c.colour + ", rgba(10, 12, 24, 0.92))";
+        add(el, "b", "", c.title);
+        add(el, "i", "", t("live_now"));
+      } else if (NIGHT) {
         el.className = "tile ncard ccard";
         if (img) { img.className = "thumb"; el.appendChild(img); }
         var tx = document.createElement("div");
@@ -2543,6 +2572,7 @@
   }
   function openCard(c) {
     if (!c || (!c.app && !c.url)) return;
+    if (c.link && TV && TV.openLink && TV.openLink(c.link, c.app)) return;
     if (c.app && TV && TV.launch && TV.launch(c.app)) return;
     if (c.url && TV && TV.openUrl) {
       if (TV.openUrl(c.url)) return;
@@ -2561,6 +2591,7 @@
   function setCards(list) {
     if (!list) return;   // not JSON, or nothing came back: keep the last good cards
     var before = JSON.stringify(CARDS);
+    list = liveCards().concat(list);
     CARDS = list;
     if (JSON.stringify(list) === before) return;
     // redraw now only where it cannot pull anything from under the remote; otherwise the next refresh does
@@ -3028,7 +3059,7 @@
     var apps = $("apps-section") || $("grid").parentNode, el = document.documentElement;
     var rows = DOCK_BANNERS && !expanded ? Math.ceil(gridEls.length / GRID_COLS) : 1;
     var row = rows > 1 && (zone === "grid" || zone === "gear" || zone === "appmenu") ? Math.floor(g / GRID_COLS) : 0;
-    el.classList.toggle("dock-down", row > 0);
+    el.classList.toggle("dock-down", row > (SPACE ? 1 : 0));
     if (rows <= 1) { apps.style.bottom = ""; apps.style.transform = ""; return; }
     // Space: two rows show, as on an Apple TV; the focus moves the rows only below the second
     var shown = SPACE ? 2 : 1;
