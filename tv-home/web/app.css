@@ -2246,10 +2246,10 @@ html.space-hold .news-live { animation-play-state: paused; }
 html.look-space.live-on.dock-banners.theme-night .live { display: block; position: fixed; left: 60rem; top: 21rem; width: 55rem; height: 26.875rem; z-index: 2; }
 html.look-space.expanded .live { display: none !important; }
 .live-pic, .live-pic2 { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
-.live-pic { -webkit-mask-image: linear-gradient(90deg, transparent 0, rgba(0,0,0,0.4) 5%, rgba(0,0,0,0.8) 11%, #000 18%, #000 82%, rgba(0,0,0,0.8) 89%, rgba(0,0,0,0.4) 95%, transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, rgba(0,0,0,0.4) 5%, rgba(0,0,0,0.8) 11%, #000 18%, #000 82%, rgba(0,0,0,0.8) 89%, rgba(0,0,0,0.4) 95%, transparent 100%); }
-.live-pic2 { overflow: hidden; -webkit-mask-image: linear-gradient(180deg, transparent 0, rgba(0,0,0,0.4) 5%, rgba(0,0,0,0.8) 11%, #000 18%, #000 82%, rgba(0,0,0,0.8) 89%, rgba(0,0,0,0.4) 95%, transparent 100%);
-  mask-image: linear-gradient(180deg, transparent 0, rgba(0,0,0,0.4) 5%, rgba(0,0,0,0.8) 11%, #000 18%, #000 82%, rgba(0,0,0,0.8) 89%, rgba(0,0,0,0.4) 95%, transparent 100%); }
+.live-pic { -webkit-mask-image: linear-gradient(90deg, transparent 0, rgba(0,0,0,0.45) 3%, rgba(0,0,0,0.85) 7%, #000 11%, #000 89%, rgba(0,0,0,0.85) 93%, rgba(0,0,0,0.45) 97%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, rgba(0,0,0,0.45) 3%, rgba(0,0,0,0.85) 7%, #000 11%, #000 89%, rgba(0,0,0,0.85) 93%, rgba(0,0,0,0.45) 97%, transparent 100%); }
+.live-pic2 { overflow: hidden; -webkit-mask-image: linear-gradient(180deg, transparent 0, rgba(0,0,0,0.45) 3%, rgba(0,0,0,0.85) 7%, #000 11%, #000 89%, rgba(0,0,0,0.85) 93%, rgba(0,0,0,0.45) 97%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, rgba(0,0,0,0.45) 3%, rgba(0,0,0,0.85) 7%, #000 11%, #000 89%, rgba(0,0,0,0.85) 93%, rgba(0,0,0,0.45) 97%, transparent 100%); }
 .live-pic2::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 62%; background: linear-gradient(180deg, rgba(5, 8, 20, 0), rgba(5, 8, 20, 0.7)); }
 .live video { width: 100%; height: 100%; object-fit: cover; background: transparent; }
 .live-badge { position: absolute; left: 6.875rem; top: 1.875rem; margin: 0; display: flex; align-items: center; gap: 0.75rem; font-size: 1.25rem; line-height: 1.625rem; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; text-shadow: 0 0.125rem 0.75rem rgba(0, 0, 0, 0.6); }
@@ -2297,7 +2297,7 @@ html.look-space.live-on.dock-banners.theme-night #live1 { left: 0; }
 html.look-space.live-on.dock-banners.theme-night .live.off { display: none; }
 
 /* a little see-through all over, so the Earth glows faintly through the picture */
-.live .live-pic { opacity: 0.9; }
+.live .live-pic { opacity: 1; }
 .live.full .live-pic { opacity: 1; }
 
 /* the channel changes with a fade: out, the next one loads unseen, in once it plays */
@@ -2314,3 +2314,23 @@ html.look-space.dock-banners.theme-night .app { transition: transform 340ms cubi
 html.look-space.dock-banners.theme-night .app.focus:not(.lifted) { transform: translateY(-0.625rem) scale(1.08); z-index: 3; }
 html.look-space.dock-banners.theme-night .app.focus:not(.lifted) .face { box-shadow: 0 1.75rem 3.25rem rgba(0, 0, 0, 0.55), 0 0 3rem var(--glow, rgba(150, 190, 255, 0.45)); }
 html.look-space.dock-banners.theme-night .app.focus:not(.lifted) .face.banner img { opacity: 1; }
+
+/* Space, More apps: a full screen view. The home fades and darkens behind, "More apps" at the top,
+   the apps in rows of five rising into place; the row the remote is on stays at one height and the
+   rows above it fade away. Back fades it all out again. */
+.all-shade { display: none; }
+html.look-space .all-shade { display: block; position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 4; pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 0%, rgba(20, 30, 70, 0.55), rgba(3, 5, 13, 0.86) 70%), rgba(3, 5, 13, 0.35);
+  opacity: 0; visibility: hidden; transition: opacity 380ms ease, visibility 0s linear 380ms; }
+html.look-space.expanded .all-shade { opacity: 1; visibility: visible; transition: opacity 380ms ease; }
+html.look-space.expanded.all-out .all-shade { opacity: 0; }
+.all-title { position: absolute; left: 5rem; top: 6.25rem; margin: 0; font-size: 3.25rem; line-height: 3.75rem; font-weight: 700; letter-spacing: -0.01em;
+  color: #fff; text-shadow: 0 0.125rem 1rem rgba(0, 0, 0, 0.6); }
+html.look-space.expanded .all-title { animation: all-in 420ms cubic-bezier(0.22, 0.8, 0.24, 1) both; }
+html.look-space.expanded.dock-banners.theme-night .apps { top: 16.5rem; z-index: 5; }
+html.look-space.expanded .quick, html.look-space.expanded #sc-time { opacity: 0; transition: opacity 300ms ease; }
+html.look-space.expanded .grid .app { animation: all-in 460ms cubic-bezier(0.22, 0.8, 0.24, 1) backwards; animation-delay: var(--d, 0ms); }
+html.look-space.expanded .grid .app.gone { opacity: 0 !important; transform: translateY(-1.5rem) scale(0.96) !important; pointer-events: none; }
+html.look-space.expanded .grid .app { transition: transform 340ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 300ms ease; }
+html.look-space.expanded.all-out .apps { opacity: 0; transition: opacity 240ms ease; }
+@keyframes all-in { from { opacity: 0; transform: translateY(2.5rem) scale(0.97); } to { opacity: 1; transform: none; } }

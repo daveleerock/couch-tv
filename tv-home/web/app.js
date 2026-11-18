@@ -380,7 +380,7 @@
   try { who = localStorage.getItem("tvhome.who"); } catch (e) {}
   var zone = "grid", s = 0, g = 0;   // focus: zone, shelf index, grid index
   var shelfEls = [], gridEls = [], gridItems = [];
-  var touched = false, expanded = false;
+  var touched = false, expanded = false, allClosing = false;
   var retryTimer = null, retryMs = 2500, statusTimer = null;
   var pmi = 0, plift = false;        // the people list: focused row, and whether that row is picked up
   var lift = null;                   // the dock app picked up to move: {pkg}
@@ -3120,6 +3120,7 @@
     if (!a || a.kind === "more") return false;
     if (a.kind === "gear" || a.kind === "smart" || a.kind === "devmode" || a.kind === "screen") { flash(t("stays_put", { name: a.name })); return true; }
     if (a.kind !== "app") return startMove();
+    if (SPACE && expanded) return startMove();   // Space, More apps: hold OK puts the app on the home row
     openAppMenu(a);
     return true;
   }
@@ -3420,6 +3421,8 @@
       }
       $("grid").style.transform = "";
       var srow = zone === "grid" || zone === "gear" || zone === "appmenu" ? Math.floor(g / GRID_COLS) : 0;
+      // More apps: the row the remote is on stays at one height; the rows above fade away upwards
+      gridEls.forEach(function (t2, i) { t2.classList.toggle("gone", Math.floor(i / GRID_COLS) < srow); });
       apps.style.bottom = "";
       apps.style.transform = "translateX(-50%) translateY(" + (-srow * BANNER_ROW_REM) + "rem)";
       el.classList.toggle("space-low", srow >= 1);   // from the second row the top row slides away
@@ -3496,6 +3499,12 @@
     if (SPACE) {
       gridEls.forEach(function (el, i) { var it = gridItems[i]; el.style.setProperty("--glow", (it && /^#[0-9a-f]{6}$/i.test(it.colour || "") ? it.colour : "#5a9cff")); });
       $("apps-title").textContent = t("apps_title");
+      if ($("all-title")) $("all-title").textContent = t("more_apps");
+      // More apps: the tiles rise into place row by row, the first rows a little after each other
+      if (expanded) gridEls.forEach(function (el, i) {
+        var row = Math.floor(i / 5), col = i % 5;
+        el.style.setProperty("--d", (row < 4 ? row * 70 + col * 30 : 0) + "ms");
+      });
     }
     if (NIGHT && !DOCK_BANNERS) {
       var tile = dockTileRem() + "rem";
@@ -4043,6 +4052,22 @@
     if (zone === "pmenu") { if (plift) dropPeople(); else closePop(); paintFocus(); return; }
     if (zone === "menu") { closeMenu(); paintFocus(); return; }   // BACK just closes the sleep choices
     if (zone === "inputs") { closeInputMenu(); paintFocus(); return; }
+    if (expanded && SPACE && !allClosing) {
+      // Space: More apps fades out first, then the home comes back with the remote on More apps
+      allClosing = true;
+      document.documentElement.classList.add("all-out");
+      setTimeout(function () {
+        document.documentElement.classList.remove("all-out");
+        expanded = false; renderGrid();
+        allClosing = false;
+        var more = -1;
+        gridItems.forEach(function (x, i) { if (x.kind === "more") more = i; });
+        dockBack = null;
+        zone = "grid"; g = more >= 0 ? more : 0;
+        paintFocus();
+      }, 260);
+      return;
+    }
     if (expanded) {
       expanded = false; renderGrid();
       if (dockBack) {   // opened with Down from the dock: Back lands on that app in the dock again
@@ -4126,7 +4151,7 @@
     }
     var a = gridItems[g], el = gridEls[g];
     if (!a) return;
-    if (a.kind === "more") { dockBack = null; expanded = true; renderGrid(); paintFocus(); return; }
+    if (a.kind === "more") { dockBack = null; expanded = true; renderGrid(); if (SPACE) g = 0; paintFocus(); return; }   // Space: More apps opens at its first app
     if (a.kind === "gear") { openGear(); return; }
     if (a.kind === "smart") { openSmart(); return; }
     if (a.kind === "devmode") { openDevMode(); return; }
