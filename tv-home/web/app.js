@@ -1570,16 +1570,25 @@
   function liveCheck() { if (liveWanted()) { if (!livePlaying) liveLoad(); } else if (livePlaying) liveStop(); }
   function liveFetchGuide() {}   // the picture shows no programme details now; News.guide() stays for later
   function liveSwitch(d) {
-    var n = Math.max(0, Math.min(LIVE_CH.length - 1, liveI + d));
-    if (n === liveI) return false;
-    liveI = n;
+    liveI = (liveI + d + LIVE_CH.length) % LIVE_CH.length;   // round from SVT24 to SVT1 and back
     keep("tvhome.live.ch", liveCh().id);
     renderLiveChips(); renderLiveInfo();
     liveStop();
     clearTimeout(liveSwitchTimer);
     liveSwitchTimer = setTimeout(liveLoad, 450);   // passing a channel on the way to another loads nothing
     liveWake();
+    liveShowName();
     return true;
+  }
+  // the channel's name, for two seconds after a change
+  var liveNameTimer = 0;
+  function liveShowName() {
+    var el = $("live-name");
+    if (!el) return;
+    el.textContent = liveCh().name;
+    el.classList.add("show");
+    clearTimeout(liveNameTimer);
+    liveNameTimer = setTimeout(function () { el.classList.remove("show"); }, 2000);
   }
   // full screen: the channel line and the title show for a few seconds after each press
   function liveWake() {
