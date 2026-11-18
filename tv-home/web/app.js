@@ -3421,7 +3421,7 @@
       var srow = zone === "grid" || zone === "gear" || zone === "appmenu" ? Math.floor(g / GRID_COLS) : 0;
       apps.style.bottom = "";
       apps.style.transform = "translateX(-50%) translateY(" + (-srow * BANNER_ROW_REM) + "rem)";
-      el.classList.toggle("space-low", srow >= 2);
+      el.classList.toggle("space-low", srow >= 1);   // from the second row the top row slides away
       if (LIVE_ON) liveCheck();
       return;
     }
