@@ -112,14 +112,15 @@
   <div class="news" id="news" aria-label="News">
       <div class="news-strip" id="news-strip"><div class="news-track" id="news-track"></div></div>
   </div>
+  <!-- Space: live TV from SVT Play, top right, level with the clock (app.js, News.kt) -->
+  <div class="live" id="live2" aria-label="Live TV2">
+    <div class="live-pic"><div class="live-pic2"><video id="live2-video" muted playsinline autoplay></video></div></div>
+    <p class="live-msg" id="live2-msg"></p>
+    <p class="live-name" id="live2-name"></p>
+  </div>
   <section class="apps" id="apps-section" aria-label="Apps">
     <p class="hint" id="hint" aria-live="polite"></p>
     <!-- Space: live TV from SVT Play, and the news line under it (app.js, News.kt) -->
-    <div class="live" id="live2" aria-label="Live TV2">
-      <div class="live-pic"><div class="live-pic2"><video id="live2-video" muted playsinline autoplay></video></div></div>
-      <p class="live-msg" id="live2-msg"></p>
-      <p class="live-name" id="live2-name"></p>
-    </div>
     <h2 class="apps-title" id="apps-title"></h2>
     <div class="grid" id="grid"></div>
   </section>

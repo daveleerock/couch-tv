@@ -1522,7 +1522,7 @@
   function livePlay(P) {
     var v = lv(P, "video");
     if (!v) return;
-    if (!P.urls[P.tryN]) { liveMsg(P, t("live_err")); P.playing = false; return; }
+    if (!P.urls[P.tryN]) { liveMsg(P, t("live_err")); P.playing = false; lv(P).classList.remove("dim"); return; }
     liveMsg(P, "");
     v.muted = liveMuted(P);
     v.src = P.urls[P.tryN];
@@ -1541,6 +1541,7 @@
   // a picture plays while it is on and can be seen: not under an app, and only the full screen one then
   function liveWanted(P) { return P.on && !covered() && (!liveFull || P === livePanel()); }
   function liveLoadOne(P) {
+    if (liveWanted(P)) lv(P).classList.add("dim");   // unseen until the picture plays
     liveStopOne(P);
     if (!liveWanted(P)) return;
     liveMsg(P, "");
@@ -1579,7 +1580,7 @@
     var P = livePanel();
     P.i = (P.i + d + LIVE_CH.length) % LIVE_CH.length;   // round from SVT24 to SVT1 and back
     keep(P.key, liveCh(P).id);
-    liveStopOne(P);
+    lv(P).classList.add("dim");   // the picture fades out; the next one fades in once it plays
     clearTimeout(P.switchT);
     P.switchT = setTimeout(function () { liveLoadOne(P); }, 450);   // passing a channel on the way to another loads nothing
     liveShowName(P);
@@ -1627,7 +1628,7 @@
             if (!P.playing || !v.error || v.getAttribute("src") !== P.urls[P.tryN]) return;
             P.tryN++; livePlay(P);
           });
-          v.addEventListener("playing", function () { liveMsg(P, ""); });
+          v.addEventListener("playing", function () { liveMsg(P, ""); lv(P).classList.remove("dim"); });
         }
       });
     }
@@ -3398,12 +3399,26 @@
 
   // home.dock_banners: the dock shows one row of six; the rows under it sit below the screen and slide
   // up a row at a time as the focus moves down into them (Keep watching fades out meanwhile).
+  var spaceFirst = 0;   // Space: the first of the five apps in view
   function slideDock() {
     var apps = $("apps-section") || $("grid").parentNode, el = document.documentElement;
     if (SPACE) {
       // Space: the focused row always sits at the same height; the whole section (More apps too) moves
       // one row a step, over the Earth, which stays where it is. From the third row the weather and
       // the settings button slide away.
+      el.classList.toggle("space-row", !expanded);
+      if (!expanded) {
+        // one row: it slides along so the app the remote is on stays among the five in view
+        var on = zone === "grid" || zone === "gear" || zone === "appmenu";
+        var nApps = gridEls.length, maxFirst = Math.max(0, nApps - 5);
+        if (on) { if (g < spaceFirst) spaceFirst = g; else if (g > spaceFirst + 4) spaceFirst = g - 4; }
+        spaceFirst = Math.max(0, Math.min(spaceFirst, maxFirst));
+        apps.style.bottom = ""; apps.style.transform = "";
+        $("grid").style.transform = "translateX(" + (-spaceFirst * 22.5) + "rem)";
+        el.classList.remove("space-low");
+        return;
+      }
+      $("grid").style.transform = "";
       var srow = zone === "grid" || zone === "gear" || zone === "appmenu" ? Math.floor(g / GRID_COLS) : 0;
       apps.style.bottom = "";
       apps.style.transform = "translateX(-50%) translateY(" + (-srow * BANNER_ROW_REM) + "rem)";
@@ -3411,6 +3426,7 @@
       if (LIVE_ON) liveCheck();
       return;
     }
+    el.classList.remove("space-row");
     var rows = DOCK_BANNERS && !expanded ? Math.ceil(gridEls.length / GRID_COLS) : 1;
     var row = rows > 1 && (zone === "grid" || zone === "gear" || zone === "appmenu") ? Math.floor(g / GRID_COLS) : 0;
     el.classList.toggle("dock-down", row > 0);
@@ -3462,7 +3478,8 @@
     if (NIGHT) {
       // the dock is as wide as what is in it; More apps uses all twelve columns
       // wide banner tiles: six to a row; the dock shows its first row and the rest wait below the screen
-      GRID_COLS = SPACE ? 5 : DOCK_BANNERS ? Math.max(1, Math.min(BANNER_COLS, gridItems.length))
+      // Space: the home's apps in one row (five in view); More apps in rows of five
+      GRID_COLS = SPACE ? (expanded ? 5 : Math.max(1, gridItems.length)) : DOCK_BANNERS ? Math.max(1, Math.min(BANNER_COLS, gridItems.length))
         : expanded ? Math.min(12, Math.floor((DOCK_ROW_REM + DOCK_GAP_REM) / (dockTileRem() + DOCK_GAP_REM)))
         : Math.max(1, Math.min(12, gridItems.length));
       $("grid").style.gridTemplateColumns = "repeat(" + GRID_COLS + ", " + dockTileRem() + "rem)";
