@@ -1369,6 +1369,117 @@
       "</b><small>" + esc(wxText(w)) + hl + "</small></div>";
   }
   // Space: the picture's layers come in once they are loaded, so nothing half drawn shows
+  // ---- Space: the news line above the apps (SVT's feeds, fetched by the app, see News.kt) ----
+  // The headlines roll right to left. With the remote on the line it stops, left and right step from
+  // headline to headline, and OK opens the article in the app's own reader. Home settings, Look can
+  // switch it off.
+  var NEWS = [], NEWS_ON = false, newsI = 0, newsX = 0, newsHalf = 0, newsT = 0, newsTimer = 0, newsStarted = false;
+  var NEWS_SPEED = 70;   // px a second, at 1920 wide
+  function newsVisible() { return NEWS_ON && NEWS.length > 0; }
+  window.newsReply = function (list) {
+    if (!Array.isArray(list)) return;
+    list = list.filter(function (n) { return n && typeof n.t === "string" && typeof n.l === "string"; }).slice(0, 40);
+    if (!list.length && NEWS.length) return;   // a failed fetch keeps what is on show
+    var keep = zone === "news" && NEWS[newsI] ? NEWS[newsI].l : "";
+    NEWS = list;
+    renderNews();
+    if (zone === "news") {
+      if (!NEWS.length) { zone = "grid"; g = 0; paintFocus(); return; }
+      var k = NEWS.map(function (n) { return n.l; }).indexOf(keep);
+      newsI = k >= 0 ? k : 0;
+      newsFocus(false);
+    }
+  };
+  function newsFetch() { try { if (window.TVNEWS && NEWS_ON && !covered()) window.TVNEWS.fetch(); } catch (e) {} }
+  function renderNews() {
+    var box = $("news"), track = $("news-track");
+    if (!box || !track) return;
+    document.documentElement.classList.toggle("news-on", newsVisible());
+    track.textContent = "";
+    if (!NEWS.length) return;
+    // twice over, so the line can roll on without a gap
+    for (var c = 0; c < 2; c++) NEWS.forEach(function (n, i) {
+      var it = document.createElement("span");
+      it.className = "news-item";
+      it.dataset.i = i;
+      var tx = document.createElement("span");
+      tx.className = "news-text";
+      tx.textContent = n.t;
+      var dot = document.createElement("span");
+      dot.className = "news-sep";
+      it.appendChild(tx); it.appendChild(dot);
+      track.appendChild(it);
+    });
+    newsHalf = track.scrollWidth / 2;
+    if (newsHalf > 0) newsX = newsX % newsHalf;
+  }
+  function newsTick(t) {
+    requestAnimationFrame(newsTick);
+    var dt = newsT ? Math.min(0.1, (t - newsT) / 1000) : 0;
+    newsT = t;
+    if (!newsVisible() || zone === "news" || covered() || newsHalf <= 0) return;
+    if (document.documentElement.classList.contains("space-hold")) return;
+    newsX = (newsX + dt * NEWS_SPEED * (window.innerWidth / 1920)) % newsHalf;
+    var track = $("news-track");
+    track.style.transition = "none";
+    track.style.transform = "translateX(" + (-newsX) + "px)";
+  }
+  // the headline the remote is on, in the middle of the strip
+  function newsFocus(slide) {
+    var track = $("news-track"), strip = $("news-strip");
+    if (!track || !strip) return;
+    var items = track.children, n = NEWS.length;
+    Array.prototype.forEach.call(items, function (el) { el.classList.remove("focus"); });
+    if (!n) return;
+    var a = items[newsI], b = items[newsI + n];
+    var w = strip.clientWidth;
+    var pick = function (el) { return el.offsetLeft - (w - el.offsetWidth) / 2; };
+    // of the headline's two copies, the one nearer where the line is now
+    var xa = pick(a), xb = b ? pick(b) : Infinity;
+    var x = Math.abs(xa - newsX) <= Math.abs(xb - newsX) ? xa : xb;
+    if (x < 0 && b) x = xb;
+    var far = Math.abs(x - newsX) > w;
+    newsX = x;
+    track.style.transition = slide && !far ? "transform 360ms cubic-bezier(0.22, 0.8, 0.24, 1)" : "none";
+    track.style.transform = "translateX(" + (-newsX) + "px)";
+    a.classList.add("focus"); if (b) b.classList.add("focus");
+  }
+  // on the line: the headline nearest the strip's middle
+  function newsEnter() {
+    var track = $("news-track"), strip = $("news-strip");
+    if (!NEWS.length) return;
+    var mid = newsX + strip.clientWidth / 2, best = 0, bestD = Infinity;
+    Array.prototype.forEach.call(track.children, function (el, k) {
+      var d = Math.abs(el.offsetLeft + el.offsetWidth / 2 - mid);
+      if (d < bestD) { bestD = d; best = k % NEWS.length; }
+    });
+    newsI = best;
+    newsFocus(true);
+  }
+  function newsLeave() {
+    var track = $("news-track");
+    if (!track) return;
+    Array.prototype.forEach.call(track.children, function (el) { el.classList.remove("focus"); });
+    if (newsHalf > 0) newsX = ((newsX % newsHalf) + newsHalf) % newsHalf;
+  }
+  function newsOpen() {
+    var n = NEWS[newsI];
+    if (!n) return;
+    try { if (window.TVNEWS) window.TVNEWS.open(n.l); } catch (e) {}
+  }
+  function newsSync() {
+    NEWS_ON = SPACE && ST.news !== false && !!window.TVNEWS;
+    var el = $("news-src"); if (el) el.textContent = t("news_title") + " · SVT";
+    renderNews();
+    if (!newsStarted && NEWS_ON) {
+      newsStarted = true;
+      requestAnimationFrame(newsTick);
+    }
+    clearInterval(newsTimer); newsTimer = 0;
+    if (NEWS_ON) { newsFetch(); newsTimer = setInterval(newsFetch, 5 * 60000); }
+    if (!newsVisible() && zone === "news") { zone = "grid"; g = 0; paintFocus(); }
+  }
+
   function spaceLayers() {
     var box = $("space"), imgs = box.querySelectorAll("img"), left = imgs.length;
     Array.prototype.forEach.call(imgs, function (im) {
@@ -3249,6 +3360,8 @@
   // ---------------- focus ----------------
   function clearFocus() {
     shelfEls.concat(gridEls, quickEls).forEach(function (el) { if (el) el.classList.remove("focus"); });
+    if ($("news")) $("news").classList.remove("focus");
+    if (zone !== "news") newsLeave();
     $("people").classList.remove("focus");
     Array.prototype.forEach.call($("people").children, function (el) { el.classList.remove("focus"); });
   }
@@ -3355,6 +3468,12 @@
       hero(null);
       $("place").style.visibility = "";
       showPhoto();
+      return;
+    }
+    if (zone === "news") {
+      if (!newsVisible()) { zone = "grid"; paintFocus(); return; }
+      $("news").classList.add("focus");
+      renderHint();
       return;
     }
     if (zone === "quick" && quickEls[qi]) {
@@ -3476,13 +3595,21 @@
       paintFocus();
       return;
     }
+    if (zone === "news") {
+      if (dx) { newsI = (newsI + dx + NEWS.length) % NEWS.length; newsFocus(true); return; }
+      if (dy < 0 && hasQuick()) { newsLeave(); zone = "quick"; qi = 0; }
+      else if (dy > 0 && gridEls.length) { newsLeave(); zone = "grid"; g = g < GRID_COLS ? Math.min(g, gridEls.length - 1) : 0; }
+      paintFocus();
+      return;
+    }
     if (zone === "quick") {
       var nq = quickVisible().length;
       if (dx < 0 && qi === 0) { if (peopleOn()) toPeople(); }
       else if (dx) qi = Math.max(0, Math.min(nq - 1, qi + dx));
       else if (dy > 0) {
         // Space: nothing sits between the settings button and the apps (the cards' row is hidden)
-        if (SPACE && gridEls.length) { zone = "grid"; g = Math.min(GRID_COLS, gridEls.length) - 1; }
+        if (SPACE && newsVisible()) { zone = "news"; newsEnter(); }
+        else if (SPACE && gridEls.length) { zone = "grid"; g = Math.min(GRID_COLS, gridEls.length) - 1; }
         else if (!NIGHT && npReach()) zone = "np";
         else if (peopleOn()) toPeople();
         else if (cards.length) zone = "shelf";
@@ -3500,7 +3627,7 @@
     } else if (zone === "shelf") {
       if (dx < 0 && s === 0 && NIGHT && npReach()) { zone = "np"; npI = Math.max(0, npButtons().length - 1); }
       else if (dx) s = Math.max(0, Math.min(shelfEls.length - 1, s + dx));
-      else if (dy < 0) { if (peopleOn()) toPeople(); else if (!NIGHT && npReach()) zone = "np"; else if (hasQuick()) { zone = "quick"; qi = 0; } }
+      else if (dy < 0) { if (SPACE && newsVisible()) { zone = "news"; newsEnter(); } else if (peopleOn()) toPeople(); else if (!NIGHT && npReach()) zone = "np"; else if (hasQuick()) { zone = "quick"; qi = 0; } }
       else if (dy > 0 && gridEls.length) {
         // land on the app under the show
         var b = shelfEls[s].getBoundingClientRect();
@@ -3524,7 +3651,8 @@
         }
       } else if (dy < 0 && row === 0) {
         // Space: the row above the apps is hidden; up goes straight to the settings button
-        if (SPACE && hasQuick()) { zone = "quick"; qi = 0; }
+        if (SPACE && newsVisible() && !expanded) { zone = "news"; newsEnter(); }
+        else if (SPACE && hasQuick()) { zone = "quick"; qi = 0; }
         else if (cards.length) zone = "shelf";
         else if (npReach()) {
           if (AMBIENT_MUSIC && music) {
@@ -3576,7 +3704,7 @@
     if (document.documentElement.dir === "rtl") dx = -dx;
     if (lift || plift || SET.lift) return;   // carrying something: the ends stay the ends
     if (zone === "smart" || zone === "ambient") return;   // they keep their own focus
-    if (SPACE && (zone === "grid" || zone === "quick" || zone === "shelf" || zone === "np" || zone === "people")) return;   // Space: the ends of the home stay the ends
+    if (SPACE && (zone === "grid" || zone === "quick" || zone === "shelf" || zone === "np" || zone === "people" || zone === "news")) return;   // Space: the ends of the home stay the ends
     var d = dy || dx;
     if (zone === "settings") {
       if (!dy) return;   // left and right change a value or the column
@@ -3725,7 +3853,7 @@
   function hold() {
     touched = true;
     if (zone === "settings") return setHold();
-    if (zone === "gear" || zone === "smart" || zone === "updask" || zone === "inputs" || zone === "shelfmenu") return false;
+    if (zone === "gear" || zone === "smart" || zone === "updask" || zone === "inputs" || zone === "shelfmenu" || zone === "news") return false;
     if (lift) { dropLift(); return true; }
     if (zone === "pmenu") {
       if (plift) dropPeople();
@@ -3759,6 +3887,7 @@
       return;
     }
     if (zone === "quick") { quickAction(); return; }
+    if (zone === "news") { newsOpen(); return; }
     if (zone === "people") {
       if (isHead()) { openPop(); paintFocus(); return; }
       pickWho(PEOPLE[pi].id);
@@ -4135,6 +4264,9 @@
       rows.push({ kind: "choice", key: "look:" + id, label: t("look_" + id), sub: t("look_" + id + "_sub"), checked: look === id,
         act: function () { ST.look = id; keep("tvhome.look", id); saveSettings(); } });
     });
+    if (look === "space") rows.push({ kind: "toggle", key: "news", label: t("news_ticker"), sub: t("news_ticker_sub"), value: ST.news !== false ? t("on") : t("off"), act: function () {
+      ST.news = ST.news === false; saveSettings(); newsSync();
+    } });
     if (look === "classic") {
       rows.push({ kind: "toggle", key: "keep-photo", label: t("keep_photo"), sub: t("keep_photo_sub"), value: KEEP_PHOTO ? t("on") : t("off"), act: function () {
         KEEP_PHOTO = !KEEP_PHOTO; ST.keep_photo = KEEP_PHOTO;
@@ -5505,7 +5637,7 @@
     noDream: function () { note(t("no_dream")); },
     // the remote's Settings/gear key, caught by the launcher natively (MainActivity.dispatchKeyEvent)
     settingsKey: function () { blip(0, 0); settingsKey(); },
-    resume: function () { PAGE_PAUSED = false; clock(); toggleScreenOff(false); setIdleAmbient(false); resetSmartIdle(); okReset(); refresh(); if (!OFFLINE) refreshQuick(); refreshWeather(); startVideo(); sceneVideos(true); refreshMusic(); refreshCards(true); if (window.AmbientWeather) window.AmbientWeather.resume(); document.documentElement.classList.remove("space-hold"); resetIdlePhoto(); },
+    resume: function () { PAGE_PAUSED = false; clock(); toggleScreenOff(false); setIdleAmbient(false); resetSmartIdle(); okReset(); refresh(); if (!OFFLINE) refreshQuick(); refreshWeather(); startVideo(); sceneVideos(true); refreshMusic(); refreshCards(true); if (window.AmbientWeather) window.AmbientWeather.resume(); document.documentElement.classList.remove("space-hold"); resetIdlePhoto(); newsFetch(); },
     // an app is in front: the video background stops until the home is back
     pause: function () { saveFocusNow(); PAGE_PAUSED = true; pauseVideo(); document.documentElement.classList.add("space-hold"); },
     // the launcher's file picker has copied the chosen photos into its own storage (Home settings)
@@ -5558,7 +5690,7 @@
       var first = (Q.match(/[?&]scene=([a-z0-9]+)/) || [])[1];
       if (!first && SUN_SYNC) first = sunTargetScene();
       showScene(Math.max(0, SCENES.map(function (s) { return s.own ? "own" : s.id; }).indexOf(first)));
-      if (SPACE) spaceLayers();
+      if (SPACE) { spaceLayers(); newsSync(); }
       else if (SCENES.length > 1) setInterval(nextScene, SCENE_MS);
       // the soft tap's audio context, made while the home is idle: made on the first key press it
       // cost that press 112 ms on an LG NANO83 (webOS 26), so the first press after every return

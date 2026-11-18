@@ -134,6 +134,10 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".News$Reader"
+            android:exported="false"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" />
 
         <!-- What Android's installer says about an update (Updater.kt). Only reachable through the
              app's own PendingIntent. -->

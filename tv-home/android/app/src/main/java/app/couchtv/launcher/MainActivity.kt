@@ -389,6 +389,7 @@ class MainActivity : Activity() {
         addJavascriptInterface(Native(), "TVOS")
         addJavascriptInterface(HomeAssistant.Page(this@MainActivity, this), "TVHA")   // smart home, see HomeAssistant.kt
         addJavascriptInterface(Updater.Page(this@MainActivity, this), "TVUP")   // updates from GitHub releases, see Updater.kt
+        addJavascriptInterface(News.Page(this@MainActivity, this), "TVNEWS")   // the Space news line, see News.kt
         webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
                 if (!loadFailed && url.startsWith("http")) {
