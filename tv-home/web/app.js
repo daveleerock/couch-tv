@@ -1488,11 +1488,11 @@
   // on the picture above them. Home settings, Look switches each one on or off.
   var LIVE_CH = [{ id: "svt1", name: "SVT1" }, { id: "svt2", name: "SVT2" }, { id: "barnkanalen", name: "SVT Barn" },
     { id: "kunskapskanalen", name: "Kunskapskanalen" }, { id: "svt24", name: "SVT24" }];
+  // one picture now (two at once stuttered on a TCL); the code still takes a list
   var LIVE = [
-    { n: 1, el: "live1", key: "tvhome.live1.ch", setting: "live1", i: 0 },
     { n: 2, el: "live2", key: "tvhome.live2.ch", setting: "live", i: 1 }
   ];
-  var LIVE_ON = false, liveSel = 1, liveFull = false, liveInit = false, liveTickTimer = 0, liveSoundTimer = 0;
+  var LIVE_ON = false, liveSel = 0, liveFull = false, liveInit = false, liveTickTimer = 0, liveSoundTimer = 0;
   LIVE.forEach(function (P) { P.on = false; P.urls = []; P.tryN = 0; P.playing = false; P.waiting = ""; P.switchT = 0; P.nameT = 0; });
   function liveVisible() { return LIVE_ON; }
   function livePanel() { return LIVE[liveSel]; }
@@ -1501,8 +1501,10 @@
   function liveMsg(P, text) { var m = lv(P, "msg"); if (m) m.textContent = text || ""; }
   // the picture the remote goes to: the one asked for if it is on, otherwise the other
   function livePick(want) {
+    if (want >= LIVE.length) want = LIVE.length - 1;
     if (LIVE[want] && LIVE[want].on) return want;
-    return LIVE[1 - want] && LIVE[1 - want].on ? 1 - want : -1;
+    for (var k = 0; k < LIVE.length; k++) if (LIVE[k].on) return k;
+    return -1;
   }
   function toLive(want) { var k = livePick(want); if (k < 0) return false; liveSel = k; zone = "live"; return true; }
   window.liveGuide = function () {};   // the pictures carry no programme details; News.guide() stays for later
@@ -1611,7 +1613,7 @@
   function liveSync() {
     var api = SPACE && !!window.TVNEWS && typeof window.TVNEWS.liveStream === "function";
     LIVE.forEach(function (P) { P.on = api && ST[P.setting] !== false; });
-    LIVE_ON = LIVE[0].on || LIVE[1].on;
+    LIVE_ON = LIVE.some(function (P) { return P.on; });
     document.documentElement.classList.toggle("live-on", LIVE_ON);
     if (!liveInit) {
       liveInit = true;
@@ -4463,7 +4465,7 @@
       rows.push({ kind: "choice", key: "look:" + id, label: t("look_" + id), sub: t("look_" + id + "_sub"), checked: look === id,
         act: function () { ST.look = id; keep("tvhome.look", id); saveSettings(); } });
     });
-    if (look === "space") [["live1", "Live TV1"], ["live", "Live TV2"]].forEach(function (x) {
+    if (look === "space") [["live", t("live_tv")]].forEach(function (x) {
       rows.push({ kind: "toggle", key: x[0], label: x[1], sub: t("live_tv_sub"), value: ST[x[0]] !== false ? t("on") : t("off"), act: function () {
         ST[x[0]] = ST[x[0]] === false; saveSettings(); liveSync();
       } });

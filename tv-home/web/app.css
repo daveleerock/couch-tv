@@ -2246,10 +2246,10 @@ html.space-hold .news-live { animation-play-state: paused; }
 html.look-space.live-on.dock-banners.theme-night .live { display: block; position: absolute; left: 55rem; top: -31rem; width: 55rem; height: 26.875rem; }
 html.look-space.expanded .live { display: none !important; }
 .live-pic, .live-pic2 { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
-.live-pic { -webkit-mask-image: linear-gradient(90deg, transparent 0, rgba(0,0,0,0.45) 3%, rgba(0,0,0,0.85) 7%, #000 11%, #000 89%, rgba(0,0,0,0.85) 93%, rgba(0,0,0,0.45) 97%, transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, rgba(0,0,0,0.45) 3%, rgba(0,0,0,0.85) 7%, #000 11%, #000 89%, rgba(0,0,0,0.85) 93%, rgba(0,0,0,0.45) 97%, transparent 100%); }
-.live-pic2 { overflow: hidden; -webkit-mask-image: linear-gradient(180deg, transparent 0, rgba(0,0,0,0.45) 3%, rgba(0,0,0,0.85) 7%, #000 11%, #000 89%, rgba(0,0,0,0.85) 93%, rgba(0,0,0,0.45) 97%, transparent 100%);
-  mask-image: linear-gradient(180deg, transparent 0, rgba(0,0,0,0.45) 3%, rgba(0,0,0,0.85) 7%, #000 11%, #000 89%, rgba(0,0,0,0.85) 93%, rgba(0,0,0,0.45) 97%, transparent 100%); }
+.live-pic { -webkit-mask-image: linear-gradient(90deg, transparent 0, rgba(0,0,0,0.4) 5%, rgba(0,0,0,0.8) 11%, #000 18%, #000 82%, rgba(0,0,0,0.8) 89%, rgba(0,0,0,0.4) 95%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, rgba(0,0,0,0.4) 5%, rgba(0,0,0,0.8) 11%, #000 18%, #000 82%, rgba(0,0,0,0.8) 89%, rgba(0,0,0,0.4) 95%, transparent 100%); }
+.live-pic2 { overflow: hidden; -webkit-mask-image: linear-gradient(180deg, transparent 0, rgba(0,0,0,0.4) 5%, rgba(0,0,0,0.8) 11%, #000 18%, #000 82%, rgba(0,0,0,0.8) 89%, rgba(0,0,0,0.4) 95%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, rgba(0,0,0,0.4) 5%, rgba(0,0,0,0.8) 11%, #000 18%, #000 82%, rgba(0,0,0,0.8) 89%, rgba(0,0,0,0.4) 95%, transparent 100%); }
 .live-pic2::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 62%; background: linear-gradient(180deg, rgba(5, 8, 20, 0), rgba(5, 8, 20, 0.7)); }
 .live video { width: 100%; height: 100%; object-fit: cover; background: transparent; }
 .live-badge { position: absolute; left: 6.875rem; top: 1.875rem; margin: 0; display: flex; align-items: center; gap: 0.75rem; font-size: 1.25rem; line-height: 1.625rem; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; text-shadow: 0 0.125rem 0.75rem rgba(0, 0, 0, 0.6); }
@@ -2295,3 +2295,7 @@ html.look-space.expanded .live { display: none !important; }
 /* Live TV1 sits left of Live TV2; one switched off leaves its place empty */
 html.look-space.live-on.dock-banners.theme-night #live1 { left: 0; }
 html.look-space.live-on.dock-banners.theme-night .live.off { display: none; }
+
+/* a little see-through all over, so the Earth glows faintly through the picture */
+.live .live-pic { opacity: 0.9; }
+.live.full .live-pic { opacity: 1; }
