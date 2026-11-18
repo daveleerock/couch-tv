@@ -2051,7 +2051,6 @@ html.look-space .scenes, html.look-space .bg, html.look-space .bgvid, html.look-
 @keyframes aur2 { from { transform: rotate(14deg) translate(4%, 0); opacity: 1; } to { transform: rotate(8deg) translate(-6%, 5%); opacity: 0.6; } }
 @keyframes aur3 { from { transform: rotate(22deg) scale(0.95); opacity: 0.55; } to { transform: rotate(28deg) scale(1.1) translate(-5%, 3%); opacity: 0.95; } }
 @keyframes aur4 { from { transform: translateX(-6%); opacity: 0.5; } to { transform: translateX(6%); opacity: 1; } }
-html.lighter .aurora i { animation: none; }
 @media (prefers-reduced-motion: reduce) { .aurora i { animation: none; } }
 /* depth: darker corners, and the bottom darkened so the apps read */
 .space-shade { position: absolute; top: 0; left: 0; width: 100%; height: 100%;

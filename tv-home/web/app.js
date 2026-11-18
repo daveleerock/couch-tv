@@ -3476,7 +3476,9 @@
           g = nx > last ? first : nx < first ? last : nx;
         }
       } else if (dy < 0 && row === 0) {
-        if (cards.length) zone = "shelf";
+        // Space: the row above the apps is hidden; up goes straight to the settings button
+        if (SPACE && hasQuick()) { zone = "quick"; qi = 0; }
+        else if (cards.length) zone = "shelf";
         else if (npReach()) {
           if (AMBIENT_MUSIC && music) {
             ambientOpen = true;
