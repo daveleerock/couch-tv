@@ -1356,8 +1356,10 @@
   // top left with a 3D picture of it (CSS only: a sun, clouds, rain, snow, a storm or the moon)
   function spaceWeather(d, hm, h, day) {
     var ct = $("sc-time"), cd = $("sc-date");
-    if (ct) ct.innerHTML = hm + (CLOCK24 ? "" : "<small>" + esc(h < 12 ? t("am") : t("pm")) + "</small>");
+    var tm = hm + (CLOCK24 ? "" : "<small>" + esc(h < 12 ? t("am") : t("pm")) + "</small>");
+    if (ct) ct.innerHTML = tm;
     if (cd) cd.textContent = day;
+    if ($("sc-time2")) { $("sc-time2").innerHTML = tm; $("sc-date2").textContent = day; }
     var box = $("swx");
     if (!box) return;
     var w = WX_SHOW && data.weather && data.weather.temp != null ? data.weather : null;
@@ -3499,7 +3501,10 @@
         // More apps: left/right run through every app line by line and wrap from the last to
         // the first; the dock (one row): they wrap within the row (#167).
         var n = gridEls.length;
-        if (expanded) g = (g + dx + n) % n;
+        if (SPACE) {   // Space: the outermost apps stay put; no running on into the next row or round
+          var sFirst = row * GRID_COLS, sLast = Math.min(n, sFirst + GRID_COLS) - 1;
+          g = Math.max(sFirst, Math.min(sLast, g + dx));
+        } else if (expanded) g = (g + dx + n) % n;
         else {
           var first = row * GRID_COLS, last = Math.min(n, first + GRID_COLS) - 1;
           var nx = g + dx;
@@ -3527,7 +3532,7 @@
         g -= GRID_COLS;
       } else if (row < lastRow) {
         g = Math.min(g + GRID_COLS, gridEls.length - 1);
-      } else if (dy > 0 && !expanded && gridItems.some(function (x) { return x.kind === "more"; })) {
+      } else if (dy > 0 && !SPACE && !expanded && gridItems.some(function (x) { return x.kind === "more"; })) {
         // Down from the bottom row of the dock opens the full apps view (#98), on the same app
         dockBack = gridKey(gridItems[g]);
         expanded = true; renderGrid();
@@ -3559,6 +3564,7 @@
     if (document.documentElement.dir === "rtl") dx = -dx;
     if (lift || plift || SET.lift) return;   // carrying something: the ends stay the ends
     if (zone === "smart" || zone === "ambient") return;   // they keep their own focus
+    if (SPACE && (zone === "grid" || zone === "quick" || zone === "shelf" || zone === "np" || zone === "people")) return;   // Space: the ends of the home stay the ends
     var d = dy || dx;
     if (zone === "settings") {
       if (!dy) return;   // left and right change a value or the column
