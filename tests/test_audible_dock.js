@@ -5,7 +5,7 @@ const source = fs.readFileSync(require('path').join(__dirname, '../tv-home/web/a
 
 const context = {
   data: { apps: [], screens: [], order: null }, expanded: false,
-  STANDALONE: false, NIGHT: true, HIDDEN_TV: [], g: 0, lift: null,
+  STANDALONE: false, NIGHT: true, SPACE: false, HIDDEN_TV: [], g: 0, lift: null,
   gridItems: [], gridEls: Array(12), hintFlash: '',
   resolveInputs: () => [], toolItems: () => [{ kind: 'gear' }],
   moreItem: () => ({ kind: 'more' }), t: key => key,
