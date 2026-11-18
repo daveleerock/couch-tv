@@ -3031,7 +3031,18 @@
   }
 
   // The Night dock tile's width in rem: a square icon, or a 16:9 TV banner as tall as the icon.
-  function dockTileRem() { return DOCK_BANNERS ? 12.5 : 7; }
+  // Night dock: the square icons are as big as the row allows. The dock holds DOCK_APPS apps plus
+  // Settings and More apps, and must fit 112rem of the 120rem-wide screen with its gaps, so the
+  // tile grows when there are fewer apps (home.dock_size): 12 tiles give 8.125rem (7rem before),
+  // capped at 9.5rem so the dock never reaches the Keep watching cards above it.
+  var DOCK_GAP_REM = 1.25, DOCK_ROW_REM = 112;
+  function dockTileRem() {
+    if (DOCK_BANNERS) return 12.5;
+    var n = DOCK_APPS + 2;
+    var t = Math.floor((DOCK_ROW_REM - (n - 1) * DOCK_GAP_REM) / n * 8) / 8;
+    return Math.max(7, Math.min(9.5, t));
+  }
+  function dockGapRem() { return DOCK_BANNERS ? 1.625 : DOCK_GAP_REM; }
 
   function appHTML(it) {
     if (NIGHT) return dockHTML(it);
@@ -3063,20 +3074,33 @@
       // the dock is as wide as what is in it; More apps uses all twelve columns
       // wide banner tiles: six to a row; the dock shows its first row and the rest wait below the screen
       GRID_COLS = DOCK_BANNERS ? Math.max(1, Math.min(BANNER_COLS, gridItems.length))
-        : expanded ? 12 : Math.max(1, Math.min(12, gridItems.length));
+        : expanded ? Math.min(12, Math.floor((DOCK_ROW_REM + DOCK_GAP_REM) / (dockTileRem() + DOCK_GAP_REM)))
+        : Math.max(1, Math.min(12, gridItems.length));
       $("grid").style.gridTemplateColumns = "repeat(" + GRID_COLS + ", " + dockTileRem() + "rem)";
+      if (!DOCK_BANNERS) {
+        $("grid").style.gridAutoRows = dockTileRem() + "rem";
+        $("grid").style.columnGap = DOCK_GAP_REM + "rem";
+        // bigger tiles make the dock taller: lift the Keep watching cards by as much
+        var sh = $("shelf-section");
+        if (sh) sh.style.top = (40 - (dockTileRem() - 7)) + "rem";
+      }
     }
     $("grid").innerHTML = gridItems.map(appHTML).join("");
     gridEls = Array.prototype.slice.call($("grid").children);
+    if (NIGHT && !DOCK_BANNERS) {
+      var tile = dockTileRem() + "rem";
+      gridEls.forEach(function (el) { el.style.width = tile; el.style.height = tile; });
+    }
     if (OLD_ENGINE) {
       // no grid: app.css wraps the tiles in a flex box. The Night dock is exactly as wide as GRID_COLS
       // tiles and their gaps (its padding too); Classic and OLED fill the width the grid would, as the
       // row of eight fits it. app.css needs to know which tiles end a row and which sit in the last
       // one, to leave the gap off there. Plain rem here, not a custom property:
       // WebViews this old may not have those either.
-      if (NIGHT) $("grid").style.width = (GRID_COLS * dockTileRem() + (GRID_COLS - 1) * 1.625 + 3.5) + "rem";
+      if (NIGHT) $("grid").style.width = (GRID_COLS * dockTileRem() + (GRID_COLS - 1) * dockGapRem() + 3.5) + "rem";
       var lastRow = Math.floor((gridEls.length - 1) / GRID_COLS) * GRID_COLS;
       gridEls.forEach(function (el, i) {
+        if (NIGHT && !DOCK_BANNERS && i % GRID_COLS !== GRID_COLS - 1) el.style.marginRight = DOCK_GAP_REM + "rem";
         if (i % GRID_COLS === GRID_COLS - 1) el.classList.add("end-col");
         if (i >= lastRow) el.classList.add("end-row");
       });
