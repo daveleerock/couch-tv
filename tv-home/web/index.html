@@ -9,14 +9,17 @@
 </head>
 <body>
 <div class="bg" id="bg" aria-hidden="true"></div>
-<!-- Space look only (home.look "space"): stars, and the Earth turning (space.js) -->
+<!-- Space look only (home.look "space"): the Earth at night under a moving aurora -->
 <div class="space" id="space" aria-hidden="true">
-  <div class="aurora"><i class="a1"></i><i class="a2"></i><i class="a3"></i><i class="a4"></i></div>
-  <!-- the big clock sits between the sky and the Earth, so the Earth's edge covers its foot (app.js clock()) -->
+  <!-- the household's picture in layers (space/): the sky and the aurora, then the big clock, then the
+       Earth and its city lights, so the horizon cuts across the clock's last figures -->
+  <img class="sp-aurora a1" src="space/aurora-layer.webp" alt="">
+  <img class="sp-aurora a2" src="space/aurora-layer.webp" alt="">
   <div class="space-clock"><p id="sc-date"></p><p id="sc-time"></p></div>
-  <img class="space-still" src="space/earth-still.webp" alt="">
-  <canvas class="space-globe"></canvas>
+  <img class="sp-earth" src="space/earth-layer.webp" alt="">
+  <img class="sp-lights" src="space/lights-layer.webp" alt="">
   <div class="space-shade"></div>
+</div>
 </div>
 <!-- Night look only: five scenes that take turns (photo, glass clock, the cut-out in front), built by app.js -->
 <!-- the video background, when one is set (Home settings, Look): app.js starts it, app.css shows it
@@ -172,7 +175,6 @@
 <script src="kids.js"></script>
 <script src="spotify-player.js"></script>
 <script src="cards.js"></script>
-<script src="space.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

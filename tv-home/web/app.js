@@ -1367,6 +1367,14 @@
     box.innerHTML = weather3d(w) + '<div class="swx-wx"><span>' + esc(weatherPlace() || "") + "</span><b>" + esc(tempText(w.temp)) +
       "</b><small>" + esc(wxText(w)) + hl + "</small></div>";
   }
+  // Space: the picture's layers come in once they are loaded, so nothing half drawn shows
+  function spaceLayers() {
+    var box = $("space"), imgs = box.querySelectorAll("img"), left = imgs.length;
+    Array.prototype.forEach.call(imgs, function (im) {
+      var done = function () { if (--left === 0) box.classList.add("ready"); };
+      if (im.complete) done(); else { im.onload = done; im.onerror = done; }
+    });
+  }
   function weather3d(w) {
     var c = w.code, night = w.is_day === false, kind;
     if (c === 0) kind = night ? "moon" : "sun";
@@ -3247,7 +3255,7 @@
 
   function shelfOn() { return !$("shelf-section").classList.contains("empty"); }
   // the switcher shows for two or more people, also while nobody has anything yet (issue #23)
-  function peopleOn() { return peopleCount() >= 2; }
+  function peopleOn() { return !SPACE && peopleCount() >= 2; }   // Space has no people switch on screen
   function toPeople() { zone = "people"; pi = whoIndex(); }
 
   // ---------------- the Mac-style dock ----------------
@@ -3459,7 +3467,9 @@
       if (dx < 0 && qi === 0) { if (peopleOn()) toPeople(); }
       else if (dx) qi = Math.max(0, Math.min(nq - 1, qi + dx));
       else if (dy > 0) {
-        if (!NIGHT && npReach()) zone = "np";
+        // Space: nothing sits between the settings button and the apps (the cards' row is hidden)
+        if (SPACE && gridEls.length) { zone = "grid"; g = Math.min(GRID_COLS, gridEls.length) - 1; }
+        else if (!NIGHT && npReach()) zone = "np";
         else if (peopleOn()) toPeople();
         else if (cards.length) zone = "shelf";
         else { zone = "grid"; g = Math.min(GRID_COLS, gridEls.length) - 1; }
@@ -3915,7 +3925,7 @@
     clearFocus();
     $("settings").classList.add("on");
     document.documentElement.classList.add("setting");
-    if (SPACE && window.SpaceLook) window.SpaceLook.pause();
+    if (SPACE) document.documentElement.classList.add("space-hold");
     renderSettings();
   }
   // Closing starts the page again when anything changed, so the look, scenes and words all agree.
@@ -3925,7 +3935,7 @@
     $("settings").classList.remove("on");
     document.documentElement.classList.remove("setting");
     zone = "grid";
-    if (SPACE && window.SpaceLook && active()) window.SpaceLook.resume();
+    if (SPACE && active()) document.documentElement.classList.remove("space-hold");
     if (window.AmbientWeather) window.AmbientWeather.resume();
     if (SET.dirty) { SET.dirty = false; restart(); return; }
     paintFocus();
@@ -5477,9 +5487,9 @@
     noDream: function () { note(t("no_dream")); },
     // the remote's Settings/gear key, caught by the launcher natively (MainActivity.dispatchKeyEvent)
     settingsKey: function () { blip(0, 0); settingsKey(); },
-    resume: function () { PAGE_PAUSED = false; clock(); toggleScreenOff(false); setIdleAmbient(false); resetSmartIdle(); okReset(); refresh(); if (!OFFLINE) refreshQuick(); refreshWeather(); startVideo(); sceneVideos(true); refreshMusic(); refreshCards(true); if (window.AmbientWeather) window.AmbientWeather.resume(); if (SPACE && window.SpaceLook) window.SpaceLook.resume(); resetIdlePhoto(); },
+    resume: function () { PAGE_PAUSED = false; clock(); toggleScreenOff(false); setIdleAmbient(false); resetSmartIdle(); okReset(); refresh(); if (!OFFLINE) refreshQuick(); refreshWeather(); startVideo(); sceneVideos(true); refreshMusic(); refreshCards(true); if (window.AmbientWeather) window.AmbientWeather.resume(); document.documentElement.classList.remove("space-hold"); resetIdlePhoto(); },
     // an app is in front: the video background stops until the home is back
-    pause: function () { saveFocusNow(); PAGE_PAUSED = true; pauseVideo(); if (window.SpaceLook) window.SpaceLook.pause(); },
+    pause: function () { saveFocusNow(); PAGE_PAUSED = true; pauseVideo(); document.documentElement.classList.add("space-hold"); },
     // the launcher's file picker has copied the chosen photos into its own storage (Home settings)
     photosAdded: function (names) { photosAdded(names); },
     // the launcher's updater has news (Updater.kt)
@@ -5530,7 +5540,7 @@
       var first = (Q.match(/[?&]scene=([a-z0-9]+)/) || [])[1];
       if (!first && SUN_SYNC) first = sunTargetScene();
       showScene(Math.max(0, SCENES.map(function (s) { return s.own ? "own" : s.id; }).indexOf(first)));
-      if (SPACE && window.SpaceLook) window.SpaceLook.start($("space"), { lighter: LIGHTER });
+      if (SPACE) spaceLayers();
       else if (SCENES.length > 1) setInterval(nextScene, SCENE_MS);
       // the soft tap's audio context, made while the home is idle: made on the first key press it
       // cost that press 112 ms on an LG NANO83 (webOS 26), so the first press after every return

@@ -2030,37 +2030,35 @@ html.dock-mac.theme-night .app.hop { animation: dock-hop 520ms 1; }
    behind (that is what a TV's graphics chip struggles with). The Earth stays put; only the apps
    move, one row a step. */
 .space, .swx, .apps-title { display: none; }
-html.look-space .space { display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: #03050d url("space/stars.jpg") center / cover no-repeat; pointer-events: none; overflow: hidden; }
+html.look-space .space { display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: #03050d url("space/bg.jpg") center / cover no-repeat; pointer-events: none; overflow: hidden; }
 html.look-space .scenes, html.look-space .bg, html.look-space .bgvid, html.look-space .weather-canvas, html.look-space .ambient-lighting { display: none; }
-.space-still, .space-globe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-.space-still { object-fit: cover; }
-/* the big clock behind the Earth, as on an iPhone's lock screen: a little see-through */
-.space-clock { position: absolute; left: 0; right: 0; top: 14.5rem; text-align: center; }
+/* the picture's layers, each the whole screen. They move with transform and opacity only, and with
+   ordinary blending, so a TV's graphics chip just slides finished pictures about. They show once
+   all of them are loaded. */
+.space img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 1.2s ease-out; will-change: transform, opacity; }
+.space.ready img { opacity: 1; }
+/* the aurora: two copies over the picture's own, swaying out of step, so the curtains seem to ripple */
+.space.ready .sp-aurora.a1 { transform-origin: 50% 30%; animation: sp-sway1 9s ease-in-out infinite alternate; }
+.space.ready .sp-aurora.a2 { transform-origin: 55% 28%; animation: sp-sway2 6.5s ease-in-out infinite alternate; }
+@keyframes sp-sway1 { 0% { transform: translateX(-1.2%) skewX(-2deg); opacity: 0.45; } 50% { transform: translateX(1%) skewX(1.5deg) scaleY(1.05); opacity: 1; } 100% { transform: translateX(-0.4%) skewX(-0.5deg) scaleY(1.02); opacity: 0.6; } }
+@keyframes sp-sway2 { 0% { transform: translateX(1.4%) skewX(2deg); opacity: 0.15; } 50% { transform: translateX(-1.2%) skewX(-2deg); opacity: 0.65; } 100% { transform: translateX(0.6%) skewX(1deg); opacity: 0.25; } }
+/* the Earth drifts very slowly, its city lights glimmer */
+.space.ready .sp-earth { transform-origin: 70% 60%; animation: sp-drift 40s ease-in-out infinite alternate; }
+.space.ready .sp-lights { transform-origin: 70% 60%; animation: sp-drift 40s ease-in-out infinite alternate, sp-twinkle 3.5s ease-in-out infinite; }
+@keyframes sp-drift { from { transform: translate(0, 0) scale(1); } to { transform: translate(-0.8%, 0.35%) scale(1.012); } }
+@keyframes sp-twinkle { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.75; } }
+/* an app or Home settings in front: everything holds still */
+html.space-hold .space img { animation-play-state: paused; }
+/* the big clock between the sky and the Earth, on the left where the sky is widest: the horizon cuts
+   across its last figures, as on an iPhone's lock screen. A little see-through. */
+.space-clock { position: absolute; left: 4.625rem; top: 12.25rem; text-align: left; }
 .space-clock p { margin: 0; }
-#sc-date { font-size: 2.125rem; line-height: 2.5rem; font-weight: 600; color: rgba(255, 255, 255, 0.78); text-shadow: 0 0.125rem 0.875rem rgba(0, 0, 0, 0.5); }
+#sc-date { margin-left: 1.125rem; font-size: 1.875rem; line-height: 2.25rem; font-weight: 600; color: rgba(255, 255, 255, 0.8); text-shadow: 0 0.125rem 0.875rem rgba(0, 0, 0, 0.5); }
 #sc-time {
-  margin-top: -1rem; font-size: 25rem; line-height: 25rem; font-weight: 700; letter-spacing: -0.045em; font-variant-numeric: tabular-nums;
+  margin-top: -1.125rem; font-size: 15.625rem; line-height: 15.625rem; font-weight: 700; letter-spacing: -0.045em; font-variant-numeric: tabular-nums;
   color: rgba(236, 242, 255, 0.62); text-shadow: 0 0 3.75rem rgba(140, 180, 255, 0.3);
 }
-#sc-time small { font-size: 5rem; font-weight: 600; letter-spacing: 0; margin-left: 1rem; }
-.space-globe { opacity: 0; transition: opacity 1.6s ease-out; }
-.space.ready .space-globe { opacity: 1; }
-/* the aurora: four soft bands that drift and breathe, above the horizon. Only transform and opacity
-   move, so the TV paints each band once. */
-.aurora { position: absolute; top: 0; left: 0; width: 100%; height: 45%; }
-.aurora i { position: absolute; display: block; border-radius: 50%; will-change: transform, opacity; }
-.aurora .a1 { left: 22%; top: -40%; width: 50%; height: 105%; background: radial-gradient(closest-side, rgba(150, 70, 255, 0.55), rgba(150, 70, 255, 0)); animation: aur1 23s ease-in-out infinite alternate; }
-.aurora .a2 { left: 41%; top: -34%; width: 42%; height: 95%; background: radial-gradient(closest-side, rgba(40, 255, 190, 0.6), rgba(40, 255, 190, 0)); transform: rotate(14deg); animation: aur2 19s ease-in-out infinite alternate; }
-.aurora .a3 { left: 66%; top: -26%; width: 35%; height: 78%; background: radial-gradient(closest-side, rgba(170, 90, 255, 0.45), rgba(170, 90, 255, 0)); transform: rotate(22deg); animation: aur3 27s ease-in-out infinite alternate; }
-.aurora .a4 { left: 30%; top: -8%; width: 55%; height: 70%; border-radius: 0;
-  background: repeating-linear-gradient(100deg, rgba(130, 255, 215, 0.09) 0, rgba(130, 255, 215, 0) 0.5rem, rgba(130, 255, 215, 0) 1.6rem);
-  -webkit-mask-image: radial-gradient(closest-side, #000, transparent); mask-image: radial-gradient(closest-side, #000, transparent);
-  animation: aur4 31s linear infinite alternate; }
-@keyframes aur1 { from { transform: translate(-3%, 0) scale(1); opacity: 0.75; } to { transform: translate(5%, 6%) scale(1.12); opacity: 1; } }
-@keyframes aur2 { from { transform: rotate(14deg) translate(4%, 0); opacity: 1; } to { transform: rotate(8deg) translate(-6%, 5%); opacity: 0.6; } }
-@keyframes aur3 { from { transform: rotate(22deg) scale(0.95); opacity: 0.55; } to { transform: rotate(28deg) scale(1.1) translate(-5%, 3%); opacity: 0.95; } }
-@keyframes aur4 { from { transform: translateX(-6%); opacity: 0.5; } to { transform: translateX(6%); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .aurora i { animation: none; } }
+#sc-time small { font-size: 3.5rem; font-weight: 600; letter-spacing: 0; margin-left: 0.75rem; }
 /* depth: darker corners, and the bottom darkened so the apps read */
 .space-shade { position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: linear-gradient(180deg, rgba(3, 5, 13, 0) 58%, rgba(3, 5, 13, 0.72) 85%, rgba(3, 5, 13, 0.9) 100%),
@@ -2071,7 +2069,7 @@ html.look-space .people-wrap, html.look-space .hero, html.look-space .time, html
 html.look-space .place, html.look-space .shelf, html.look-space .np, html.look-space .quick-note { display: none; }
 
 /* frosted glass, as used everywhere in this look */
-html.look-space .swx, html.look-space .qbtn, html.look-space.dock-banners.theme-night .app .face, html.look-space .settings {
+html.look-space .qbtn, html.look-space.dock-banners.theme-night .app .face, html.look-space .settings {
   background: linear-gradient(155deg, rgba(190, 205, 240, 0.16) 0%, rgba(110, 130, 185, 0.10) 45%, rgba(50, 64, 110, 0.16) 100%);
   -webkit-backdrop-filter: none; backdrop-filter: none;
   box-shadow: inset 0 0.09rem 0 rgba(255, 255, 255, 0.55), inset 0 -0.0625rem 0 rgba(255, 255, 255, 0.1), inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.18), 0 1.4rem 2.8rem rgba(0, 0, 0, 0.45);
@@ -2080,7 +2078,7 @@ html.look-space .swx, html.look-space .qbtn, html.look-space.dock-banners.theme-
 /* the weather alone, top left, with a 3D picture of it */
 html.look-space .swx {
   display: flex; align-items: center; gap: 1.75rem; position: absolute; left: 0; top: 0.25rem; height: 10.625rem; box-sizing: border-box;
-  padding: 0 2.25rem 0 1.75rem; border-radius: 2.5rem; text-shadow: 0 0.125rem 0.875rem rgba(0, 0, 0, 0.35);
+  padding: 0; text-shadow: 0 0.125rem 1rem rgba(0, 0, 0, 0.6);
   transition: transform 380ms cubic-bezier(0.22, 0.8, 0.24, 1), opacity 380ms ease;
 }
 html.look-space .swx.none { display: none; }
@@ -2088,7 +2086,7 @@ html.look-space .swx.none { display: none; }
 .swx-wx b { display: block; font-size: 4rem; line-height: 4.375rem; font-weight: 650; letter-spacing: -0.02em; }
 .swx-wx small { display: block; font-size: 1.3125rem; line-height: 1.6875rem; color: rgba(255, 255, 255, 0.82); white-space: nowrap; }
 /* 3D weather: lit spheres and puffs, CSS only */
-.w3 { position: relative; flex: none; display: block; width: 7.5rem; height: 7.5rem; }
+.w3 { position: relative; flex: none; display: block; width: 7.5rem; height: 7.5rem; opacity: 0.85; }
 .w3 i, .w3 b, .w3 u { position: absolute; display: block; }
 .w3-sun { left: 0.75rem; top: 0.75rem; width: 6rem; height: 6rem; border-radius: 50%;
   background: radial-gradient(circle at 34% 28%, #fffbe0 0%, #ffe27a 22%, #ffbe2e 52%, #ff8f1c 80%, #e2620b 100%);

@@ -1,8 +1,6 @@
 # The Space look's pictures
 
-- `earth-day.jpg`, `earth-night.jpg`, `earth-night-4k.jpg`, `earth-clouds.jpg`: Earth textures by
-  [Solar System Scope](https://www.solarsystemscope.com/textures/), licensed under
-  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), resized and merged as in the three.js
-  examples (`earth-clouds.jpg`: bump in red, roughness in green, clouds in blue).
-- `earth-still.webp`: a still of the same view, rendered from those textures by `space.js`'s shader.
-- `stars.jpg`: generated.
+- `bg.jpg`: the household's own picture of the Earth at night under an aurora, scaled to 1920 x 1080.
+- `aurora-layer.webp`, `earth-layer.webp`, `lights-layer.webp`: the same picture split into layers
+  (the aurora above the horizon, the Earth below it, and the city lights), so the aurora can sway,
+  the Earth drift and the lights glimmer, and the clock can sit between the sky and the Earth.
