@@ -2060,16 +2060,12 @@ html.space-hold .space img, html.space-hold .sp-pan { animation-play-state: paus
    across its last figures, as on an iPhone's lock screen. A little see-through. */
 .space-clock { position: absolute; left: 4.625rem; top: 12.25rem; text-align: left; }
 .space-clock p { margin: 0; }
-#sc-date { margin-left: 1.125rem; font-size: 1.875rem; line-height: 2.25rem; font-weight: 600; color: rgba(255, 255, 255, 0.8); text-shadow: 0 0.125rem 0.875rem rgba(0, 0, 0, 0.5); }
+#sc-date { visibility: hidden; margin-left: 1.125rem; font-size: 1.875rem; line-height: 2.25rem; font-weight: 600; color: rgba(255, 255, 255, 0.8); text-shadow: 0 0.125rem 0.875rem rgba(0, 0, 0, 0.5); }
 #sc-time {
   margin-top: -1.125rem; font-size: 15.625rem; line-height: 15.625rem; font-weight: 700; letter-spacing: -0.045em; font-variant-numeric: tabular-nums;
   color: rgba(236, 242, 255, 0.62); text-shadow: 0 0 3.75rem rgba(140, 180, 255, 0.3);
 }
 #sc-time small { font-size: 3.5rem; font-weight: 600; letter-spacing: 0; margin-left: 0.75rem; }
-/* the faint copy over the Earth: where the Earth covers the clock, its figures still show through */
-.space-clock.ghost #sc-time2 { margin-top: -1.125rem; font-size: 15.625rem; line-height: 15.625rem; font-weight: 700; letter-spacing: -0.045em; font-variant-numeric: tabular-nums; color: rgba(236, 242, 255, 0.24); }
-.space-clock.ghost #sc-time2 small { font-size: 3.5rem; font-weight: 600; letter-spacing: 0; margin-left: 0.75rem; }
-.space-clock.ghost #sc-date2 { margin-left: 1.125rem; font-size: 1.875rem; line-height: 2.25rem; visibility: hidden; }
 /* depth: darker corners, and the bottom darkened so the apps read */
 .space-shade { position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: linear-gradient(180deg, rgba(3, 5, 13, 0) 58%, rgba(3, 5, 13, 0.72) 85%, rgba(3, 5, 13, 0.9) 100%),

@@ -1359,7 +1359,6 @@
     var tm = hm + (CLOCK24 ? "" : "<small>" + esc(h < 12 ? t("am") : t("pm")) + "</small>");
     if (ct) ct.innerHTML = tm;
     if (cd) cd.textContent = day;
-    if ($("sc-time2")) { $("sc-time2").innerHTML = tm; $("sc-date2").textContent = day; }
     var box = $("swx");
     if (!box) return;
     var w = WX_SHOW && data.weather && data.weather.temp != null ? data.weather : null;
