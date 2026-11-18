@@ -110,9 +110,15 @@
 
   <section class="apps" id="apps-section" aria-label="Apps">
     <p class="hint" id="hint" aria-live="polite"></p>
-    <!-- Space: the news line (app.js, News.kt) -->
+    <!-- Space: live TV from SVT Play, and the news line under it (app.js, News.kt) -->
+    <div class="live" id="live" aria-label="Live TV">
+      <div class="live-pic"><div class="live-pic2"><video id="live-video" muted playsinline autoplay></video></div></div>
+      <p class="live-badge"><span class="news-live" aria-hidden="true"></span><span id="live-badge"></span></p>
+      <div class="live-info"><p class="live-ch" id="live-ch"></p><p class="live-title" id="live-title"></p><div class="live-bar"><i id="live-bar"></i></div><p class="live-next" id="live-next"></p></div>
+      <div class="live-chips" id="live-chips"></div>
+      <p class="live-msg" id="live-msg"></p>
+    </div>
     <div class="news" id="news" aria-label="News">
-      <p class="news-head"><span class="news-live" aria-hidden="true"></span><span id="news-src"></span></p>
       <div class="news-strip" id="news-strip"><div class="news-track" id="news-track"></div></div>
     </div>
     <h2 class="apps-title" id="apps-title"></h2>

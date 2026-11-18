@@ -1469,7 +1469,6 @@
   }
   function newsSync() {
     NEWS_ON = SPACE && ST.news !== false && !!window.TVNEWS;
-    var el = $("news-src"); if (el) el.textContent = t("news_title") + " · SVT";
     renderNews();
     if (!newsStarted && NEWS_ON) {
       newsStarted = true;
@@ -1478,6 +1477,164 @@
     clearInterval(newsTimer); newsTimer = 0;
     if (NEWS_ON) { newsFetch(); newsTimer = setInterval(newsFetch, 5 * 60000); }
     if (!newsVisible() && zone === "news") { zone = "grid"; g = 0; paintFocus(); }
+  }
+
+  // ---- Space: live TV from SVT Play, top right above the news line ----
+  // The picture comes from SVT's own player API and plays muted in a frameless, faded window; the
+  // guide (now and next) from SVT Play's channel page. Left and right change the channel, OK makes it
+  // full screen with sound, Back (or Home) takes it back. Home settings, Look can switch it off.
+  var LIVE_CH = [{ id: "svt1", name: "SVT1" }, { id: "svt2", name: "SVT2" }, { id: "barnkanalen", name: "SVT Barn" },
+    { id: "kunskapskanalen", name: "Kunskapskanalen" }, { id: "svt24", name: "SVT24" }];
+  var LIVE_ON = false, liveI = 0, liveGuideData = {}, liveUrls = [], liveTry = 0, liveFull = false, livePlaying = false;
+  var liveGuideTimer = 0, liveTickTimer = 0, liveSwitchTimer = 0, liveQuietTimer = 0, liveInit = false;
+  function liveVisible() { return LIVE_ON; }
+  function liveCh() { return LIVE_CH[liveI] || LIVE_CH[0]; }
+  function liveMsg(text) { var m = $("live-msg"); if (m) m.textContent = text || ""; }
+  function renderLiveChips() {
+    var box = $("live-chips");
+    if (!box) return;
+    box.textContent = "";
+    LIVE_CH.forEach(function (c, i) {
+      var sp = document.createElement("span");
+      sp.textContent = c.name;
+      if (i === liveI) sp.className = "sel";
+      box.appendChild(sp);
+    });
+  }
+  function hm(str) { var m = /^(\d{1,2}):(\d{2})$/.exec(str || ""); return m ? (+m[1]) * 60 + (+m[2]) : -1; }
+  function renderLiveInfo() {
+    if (!$("live-ch")) return;
+    var c = liveCh(), list = liveGuideData[c.id] || [];
+    $("live-badge").textContent = t("live_now");
+    $("live-ch").textContent = t("live_on_now", { ch: c.name });
+    var now = list[0], next = list[1];
+    $("live-title").textContent = now ? now.n : c.name;
+    $("live-next").textContent = next ? t("live_next", { time: next.t, name: next.n }) : "";
+    var pct = 0;
+    if (now && next) {
+      var d = new Date(), cur = d.getHours() * 60 + d.getMinutes(), a = hm(now.t), b = hm(next.t);
+      if (a >= 0 && b >= 0) {
+        if (b <= a) b += 1440;             // runs past midnight
+        if (cur < a - 60) cur += 1440;
+        pct = Math.max(0, Math.min(100, (cur - a) / (b - a) * 100));
+      }
+    }
+    $("live-bar").style.width = pct + "%";
+    $("live-bar").parentNode.style.visibility = now && next ? "" : "hidden";
+  }
+  window.liveGuide = function (g) {
+    if (!g || typeof g !== "object") return;
+    var ok = {};
+    LIVE_CH.forEach(function (c) {
+      var l = Array.isArray(g[c.id]) ? g[c.id].filter(function (e) { return e && typeof e.t === "string" && typeof e.n === "string"; }) : [];
+      if (l.length) ok[c.id] = l.slice(0, 4);
+    });
+    if (Object.keys(ok).length) liveGuideData = ok;
+    renderLiveInfo();
+  };
+  window.liveStream = function (r) {
+    if (!r || r.ch !== liveCh().id) return;   // an answer for a channel already left
+    liveUrls = (Array.isArray(r.urls) ? r.urls : []).filter(function (u) { return /^https:\/\/[^\s"'<>]+$/.test(u); });
+    liveTry = 0;
+    livePlay();
+  };
+  function livePlay() {
+    var v = $("live-video");
+    if (!v) return;
+    if (!liveUrls[liveTry]) { liveMsg(t("live_err")); livePlaying = false; return; }
+    liveMsg("");
+    v.muted = !liveFull;
+    v.src = liveUrls[liveTry];
+    livePlaying = true;
+    var p = v.play();
+    if (p && p.catch) p.catch(function () {});
+  }
+  function liveStop() {
+    var v = $("live-video");
+    livePlaying = false;
+    clearTimeout(liveSwitchTimer);
+    if (!v) return;
+    try { v.pause(); v.removeAttribute("src"); v.load(); } catch (e) {}
+  }
+  // the picture plays only while it can be seen: not under an app, not with the apps scrolled up
+  function liveWanted() {
+    return LIVE_ON && !covered() && (liveFull || !document.documentElement.classList.contains("space-low"));
+  }
+  function liveLoad() {
+    liveStop();
+    if (!liveWanted()) return;
+    liveMsg("");
+    try { window.TVNEWS.liveStream(liveCh().id); } catch (e) {}
+  }
+  function liveCheck() { if (liveWanted()) { if (!livePlaying) liveLoad(); } else if (livePlaying) liveStop(); }
+  function liveFetchGuide() { try { if (LIVE_ON && !covered()) window.TVNEWS.liveGuide(); } catch (e) {} }
+  function liveSwitch(d) {
+    var n = Math.max(0, Math.min(LIVE_CH.length - 1, liveI + d));
+    if (n === liveI) return false;
+    liveI = n;
+    keep("tvhome.live.ch", liveCh().id);
+    renderLiveChips(); renderLiveInfo();
+    liveStop();
+    clearTimeout(liveSwitchTimer);
+    liveSwitchTimer = setTimeout(liveLoad, 450);   // passing a channel on the way to another loads nothing
+    liveWake();
+    return true;
+  }
+  // full screen: the channel line and the title show for a few seconds after each press
+  function liveWake() {
+    var el = $("live");
+    if (!el || !liveFull) return;
+    el.classList.remove("quiet");
+    clearTimeout(liveQuietTimer);
+    liveQuietTimer = setTimeout(function () { el.classList.add("quiet"); }, 5000);
+  }
+  var liveHome = null;
+  function liveEnterFull() {
+    var el = $("live"), v = $("live-video");
+    if (!el || liveFull) return;
+    liveFull = true;
+    liveHome = el.parentNode;
+    document.body.appendChild(el);   // out of the moving apps section, so it can cover the screen
+    el.classList.add("full");
+    if (v) { v.muted = false; var p = v.play(); if (p && p.catch) p.catch(function () {}); }
+    if (!livePlaying) liveLoad();
+    liveWake();
+  }
+  function liveExitFull() {
+    var el = $("live"), v = $("live-video");
+    if (!el || !liveFull) return;
+    liveFull = false;
+    clearTimeout(liveQuietTimer);
+    el.classList.remove("full", "quiet");
+    if (liveHome) liveHome.insertBefore(el, liveHome.firstChild);
+    if (v) { v.muted = true; var p = v.play(); if (p && p.catch) p.catch(function () {}); }
+    liveCheck();
+  }
+  function liveSync() {
+    LIVE_ON = SPACE && ST.live !== false && !!window.TVNEWS && typeof window.TVNEWS.liveStream === "function";
+    document.documentElement.classList.toggle("live-on", LIVE_ON);
+    if (!liveInit) {
+      liveInit = true;
+      var k = kept("tvhome.live.ch"), at = LIVE_CH.map(function (c) { return c.id; }).indexOf(k);
+      if (at >= 0) liveI = at;
+      var v = $("live-video");
+      if (v) {
+        v.addEventListener("error", function () {
+          // only an error of the address being played counts: one from a picture just let go does not
+          if (!livePlaying || !v.error || v.getAttribute("src") !== liveUrls[liveTry]) return;
+          window.__liveErr = v.error.code;
+          liveTry++; livePlay();
+        });
+        v.addEventListener("playing", function () { liveMsg(""); });
+      }
+    }
+    clearInterval(liveGuideTimer); clearInterval(liveTickTimer); liveGuideTimer = liveTickTimer = 0;
+    if (!LIVE_ON) { if (liveFull) liveExitFull(); liveStop(); if (zone === "live") { zone = "grid"; g = 0; paintFocus(); } return; }
+    renderLiveChips(); renderLiveInfo();
+    liveFetchGuide();
+    liveGuideTimer = setInterval(liveFetchGuide, 3 * 60000);
+    liveTickTimer = setInterval(function () { renderLiveInfo(); liveCheck(); }, 20000);
+    liveLoad();
   }
 
   function spaceLayers() {
@@ -3246,6 +3403,7 @@
       apps.style.bottom = "";
       apps.style.transform = "translateX(-50%) translateY(" + (-srow * BANNER_ROW_REM) + "rem)";
       el.classList.toggle("space-low", srow >= 2);
+      if (LIVE_ON) liveCheck();
       return;
     }
     var rows = DOCK_BANNERS && !expanded ? Math.ceil(gridEls.length / GRID_COLS) : 1;
@@ -3362,6 +3520,7 @@
     shelfEls.concat(gridEls, quickEls).forEach(function (el) { if (el) el.classList.remove("focus"); });
     if ($("news")) $("news").classList.remove("focus");
     if (zone !== "news") newsLeave();
+    if ($("live")) $("live").classList.remove("focus");
     $("people").classList.remove("focus");
     Array.prototype.forEach.call($("people").children, function (el) { el.classList.remove("focus"); });
   }
@@ -3468,6 +3627,12 @@
       hero(null);
       $("place").style.visibility = "";
       showPhoto();
+      return;
+    }
+    if (zone === "live") {
+      if (!liveVisible()) { zone = "grid"; paintFocus(); return; }
+      $("live").classList.add("focus");
+      renderHint();
       return;
     }
     if (zone === "news") {
@@ -3595,9 +3760,21 @@
       paintFocus();
       return;
     }
+    if (zone === "live") {
+      if (liveFull) { if (dx) liveSwitch(dx); else liveWake(); return; }
+      if (dx) { liveSwitch(dx); paintFocus(); return; }
+      if (dy < 0 && hasQuick()) { zone = "quick"; qi = 0; }
+      else if (dy > 0) {
+        if (newsVisible()) { zone = "news"; newsEnter(); }
+        else if (gridEls.length) { zone = "grid"; g = Math.min(GRID_COLS, gridEls.length) - 1; }
+      }
+      paintFocus();
+      return;
+    }
     if (zone === "news") {
       if (dx) { newsI = (newsI + dx + NEWS.length) % NEWS.length; newsFocus(true); return; }
-      if (dy < 0 && hasQuick()) { newsLeave(); zone = "quick"; qi = 0; }
+      if (dy < 0 && liveVisible()) { newsLeave(); zone = "live"; }
+      else if (dy < 0 && hasQuick()) { newsLeave(); zone = "quick"; qi = 0; }
       else if (dy > 0 && gridEls.length) { newsLeave(); zone = "grid"; g = g < GRID_COLS ? Math.min(g, gridEls.length - 1) : 0; }
       paintFocus();
       return;
@@ -3608,7 +3785,8 @@
       else if (dx) qi = Math.max(0, Math.min(nq - 1, qi + dx));
       else if (dy > 0) {
         // Space: nothing sits between the settings button and the apps (the cards' row is hidden)
-        if (SPACE && newsVisible()) { zone = "news"; newsEnter(); }
+        if (SPACE && liveVisible()) zone = "live";
+        else if (SPACE && newsVisible()) { zone = "news"; newsEnter(); }
         else if (SPACE && gridEls.length) { zone = "grid"; g = Math.min(GRID_COLS, gridEls.length) - 1; }
         else if (!NIGHT && npReach()) zone = "np";
         else if (peopleOn()) toPeople();
@@ -3627,7 +3805,7 @@
     } else if (zone === "shelf") {
       if (dx < 0 && s === 0 && NIGHT && npReach()) { zone = "np"; npI = Math.max(0, npButtons().length - 1); }
       else if (dx) s = Math.max(0, Math.min(shelfEls.length - 1, s + dx));
-      else if (dy < 0) { if (SPACE && newsVisible()) { zone = "news"; newsEnter(); } else if (peopleOn()) toPeople(); else if (!NIGHT && npReach()) zone = "np"; else if (hasQuick()) { zone = "quick"; qi = 0; } }
+      else if (dy < 0) { if (SPACE && newsVisible()) { zone = "news"; newsEnter(); } else if (SPACE && liveVisible()) zone = "live"; else if (peopleOn()) toPeople(); else if (!NIGHT && npReach()) zone = "np"; else if (hasQuick()) { zone = "quick"; qi = 0; } }
       else if (dy > 0 && gridEls.length) {
         // land on the app under the show
         var b = shelfEls[s].getBoundingClientRect();
@@ -3652,6 +3830,7 @@
       } else if (dy < 0 && row === 0) {
         // Space: the row above the apps is hidden; up goes straight to the settings button
         if (SPACE && newsVisible() && !expanded) { zone = "news"; newsEnter(); }
+        else if (SPACE && liveVisible() && !expanded) zone = "live";
         else if (SPACE && hasQuick()) { zone = "quick"; qi = 0; }
         else if (cards.length) zone = "shelf";
         else if (npReach()) {
@@ -3704,7 +3883,7 @@
     if (document.documentElement.dir === "rtl") dx = -dx;
     if (lift || plift || SET.lift) return;   // carrying something: the ends stay the ends
     if (zone === "smart" || zone === "ambient") return;   // they keep their own focus
-    if (SPACE && (zone === "grid" || zone === "quick" || zone === "shelf" || zone === "np" || zone === "people" || zone === "news")) return;   // Space: the ends of the home stay the ends
+    if (SPACE && (zone === "grid" || zone === "quick" || zone === "shelf" || zone === "np" || zone === "people" || zone === "news" || zone === "live")) return;   // Space: the ends of the home stay the ends
     var d = dy || dx;
     if (zone === "settings") {
       if (!dy) return;   // left and right change a value or the column
@@ -3810,6 +3989,7 @@
   }
 
   function goHome() {
+    if (liveFull) { liveExitFull(); paintFocus(); return; }
     if (screenOffActive) {
       toggleScreenOff(false);
       return;
@@ -3853,7 +4033,7 @@
   function hold() {
     touched = true;
     if (zone === "settings") return setHold();
-    if (zone === "gear" || zone === "smart" || zone === "updask" || zone === "inputs" || zone === "shelfmenu" || zone === "news") return false;
+    if (zone === "gear" || zone === "smart" || zone === "updask" || zone === "inputs" || zone === "shelfmenu" || zone === "news" || zone === "live") return false;
     if (lift) { dropLift(); return true; }
     if (zone === "pmenu") {
       if (plift) dropPeople();
@@ -3888,6 +4068,7 @@
     }
     if (zone === "quick") { quickAction(); return; }
     if (zone === "news") { newsOpen(); return; }
+    if (zone === "live") { if (liveFull) liveWake(); else liveEnterFull(); return; }
     if (zone === "people") {
       if (isHead()) { openPop(); paintFocus(); return; }
       pickWho(PEOPLE[pi].id);
@@ -4264,6 +4445,9 @@
       rows.push({ kind: "choice", key: "look:" + id, label: t("look_" + id), sub: t("look_" + id + "_sub"), checked: look === id,
         act: function () { ST.look = id; keep("tvhome.look", id); saveSettings(); } });
     });
+    if (look === "space") rows.push({ kind: "toggle", key: "live", label: t("live_tv"), sub: t("live_tv_sub"), value: ST.live !== false ? t("on") : t("off"), act: function () {
+      ST.live = ST.live === false; saveSettings(); liveSync();
+    } });
     if (look === "space") rows.push({ kind: "toggle", key: "news", label: t("news_ticker"), sub: t("news_ticker_sub"), value: ST.news !== false ? t("on") : t("off"), act: function () {
       ST.news = ST.news === false; saveSettings(); newsSync();
     } });
@@ -5637,9 +5821,9 @@
     noDream: function () { note(t("no_dream")); },
     // the remote's Settings/gear key, caught by the launcher natively (MainActivity.dispatchKeyEvent)
     settingsKey: function () { blip(0, 0); settingsKey(); },
-    resume: function () { PAGE_PAUSED = false; clock(); toggleScreenOff(false); setIdleAmbient(false); resetSmartIdle(); okReset(); refresh(); if (!OFFLINE) refreshQuick(); refreshWeather(); startVideo(); sceneVideos(true); refreshMusic(); refreshCards(true); if (window.AmbientWeather) window.AmbientWeather.resume(); document.documentElement.classList.remove("space-hold"); resetIdlePhoto(); newsFetch(); },
+    resume: function () { PAGE_PAUSED = false; clock(); toggleScreenOff(false); setIdleAmbient(false); resetSmartIdle(); okReset(); refresh(); if (!OFFLINE) refreshQuick(); refreshWeather(); startVideo(); sceneVideos(true); refreshMusic(); refreshCards(true); if (window.AmbientWeather) window.AmbientWeather.resume(); document.documentElement.classList.remove("space-hold"); resetIdlePhoto(); newsFetch(); if (LIVE_ON) { liveFetchGuide(); liveLoad(); } },
     // an app is in front: the video background stops until the home is back
-    pause: function () { saveFocusNow(); PAGE_PAUSED = true; pauseVideo(); document.documentElement.classList.add("space-hold"); },
+    pause: function () { saveFocusNow(); PAGE_PAUSED = true; pauseVideo(); document.documentElement.classList.add("space-hold"); if (liveFull) liveExitFull(); liveStop(); },
     // the launcher's file picker has copied the chosen photos into its own storage (Home settings)
     photosAdded: function (names) { photosAdded(names); },
     // the launcher's updater has news (Updater.kt)
@@ -5690,7 +5874,7 @@
       var first = (Q.match(/[?&]scene=([a-z0-9]+)/) || [])[1];
       if (!first && SUN_SYNC) first = sunTargetScene();
       showScene(Math.max(0, SCENES.map(function (s) { return s.own ? "own" : s.id; }).indexOf(first)));
-      if (SPACE) { spaceLayers(); newsSync(); }
+      if (SPACE) { spaceLayers(); newsSync(); liveSync(); }
       else if (SCENES.length > 1) setInterval(nextScene, SCENE_MS);
       // the soft tap's audio context, made while the home is idle: made on the first key press it
       // cost that press 112 ms on an LG NANO83 (webOS 26), so the first press after every return

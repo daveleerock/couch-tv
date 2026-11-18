@@ -44,7 +44,7 @@ object News {
     private fun get(url: String): String? = try {
         val c = URL(url).openConnection() as HttpURLConnection
         c.connectTimeout = 8000; c.readTimeout = 8000
-        c.setRequestProperty("User-Agent", "couch-tv")
+        c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) couch-tv")
         c.inputStream.bufferedReader().use { it.readText() }.also { c.disconnect() }
     } catch (e: Exception) { null }
 
@@ -90,6 +90,63 @@ object News {
         return out
     }
 
+    // ---- Live TV: SVT's five channels, the picture from SVT's own player API, the guide from SVT Play ----
+    val CHANNELS = listOf("svt1", "svt2", "barnkanalen", "kunskapskanalen", "svt24")
+
+    /** the channel's HLS addresses (hls first, then hls-full), only from SVT's live CDN */
+    fun stream(ch: String): JSONObject {
+        val out = JSONObject().put("ch", ch)
+        if (ch !in CHANNELS) return out
+        val body = get("https://api.svt.se/video/ch-$ch") ?: return out
+        try {
+            val refs = JSONObject(body).optJSONArray("videoReferences") ?: return out
+            val by = HashMap<String, String>()
+            for (i in 0 until refs.length()) {
+                val r = refs.optJSONObject(i) ?: continue
+                val u = r.optString("url")
+                val host = try { Uri.parse(u).host ?: "" } catch (e: Exception) { "" }
+                if (u.startsWith("https://") && (host.endsWith(".akamaized.net") || host.endsWith(".svt.se"))) by[r.optString("format")] = u
+            }
+            val list = JSONArray()
+            listOf("hls", "hls-full", "hls-cmaf-live").forEach { f -> by[f]?.let { list.put(it) } }
+            out.put("urls", list)
+        } catch (e: Exception) {}
+        return out
+    }
+
+    private fun unescape(t: String): String = t.replace("&amp;", "&").replace("&quot;", "\"").replace("&#x27;", "'")
+        .replace("&#39;", "'").replace("&lt;", "<").replace("&gt;", ">").replace("&nbsp;", " ").replace(Regex("\\s+"), " ").trim()
+
+    /**
+     * What is on now and next on each channel, read from SVT Play's channel page, where every entry is
+     * written "Klockan 18:47 - Sverige Live" and each channel's list ends with a link holding
+     * expand=ch-<channel>. A page that changes its wording only leaves the guide empty.
+     */
+    fun guide(): JSONObject {
+        val out = JSONObject()
+        val html = get("https://www.svtplay.se/kanaler/svt1?start=auto") ?: return out
+        val marks = Regex("expand=ch-([a-z0-9]+)").findAll(html).toList()
+        val entry = Regex("Klockan (\\d{1,2})[:.](\\d{2}) [-–] ([^<\"]{1,140})")
+        var from = 0
+        for (m in marks) {
+            val ch = m.groupValues[1]
+            val seg = html.substring(from, m.range.first)
+            from = m.range.last
+            if (ch !in CHANNELS || out.has(ch)) continue
+            val list = JSONArray()
+            val seen = HashSet<String>()
+            for (e in entry.findAll(seg)) {
+                val time = e.groupValues[1].padStart(2, '0') + ":" + e.groupValues[2]
+                val name = unescape(e.groupValues[3]).replace(Regex("\\d{1,2}[:.]\\d{2}$"), "").trim()
+                if (name.isEmpty() || !seen.add(time + name)) continue
+                list.put(JSONObject().put("t", time).put("n", name.take(80)))
+                if (list.length() >= 4) break
+            }
+            if (list.length() > 0) out.put(ch, list)
+        }
+        return out
+    }
+
     class Page(private val ctx: Activity, private val web: WebView) {
         private val main = Handler(Looper.getMainLooper())
         private val io = Executors.newSingleThreadExecutor()
@@ -100,6 +157,22 @@ object News {
                 val json = try { mixed().toString() } catch (e: Exception) { "[]" }
                 main.post { try { web.evaluateJavascript("window.newsReply && newsReply($json)", null) } catch (e: Exception) {} }
             }
+        }
+
+        private fun reply(fn: String, json: String) {
+            main.post { try { web.evaluateJavascript("window.$fn && $fn($json)", null) } catch (e: Exception) {} }
+        }
+
+        /** answers through liveStream({ch, urls}) */
+        @JavascriptInterface
+        fun liveStream(ch: String) {
+            io.execute { reply("liveStream", try { stream(ch).toString() } catch (e: Exception) { "{}" }) }
+        }
+
+        /** answers through liveGuide({svt1: [{t, n}, ...], ...}) */
+        @JavascriptInterface
+        fun liveGuide() {
+            io.execute { reply("liveGuide", try { guide().toString() } catch (e: Exception) { "{}" }) }
         }
 
         /** opens a headline's article in the reader; anything but an svt.se link is refused */
