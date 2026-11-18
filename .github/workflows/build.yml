@@ -51,7 +51,7 @@ jobs:
           if [ -n "$DEBUG_KEYSTORE" ]; then
             # pasted by hand into GitHub: drop any spaces or line breaks the copy added
             k=$(printf '%s' "$DEBUG_KEYSTORE" | tr -cd 'A-Za-z0-9+/=')
-            echo "key text: ${#k} characters (3556 expected)"
+            echo "key text: ${#k} characters (1504 expected)"
             printf '%s' "$k" | base64 -d > "$RUNNER_TEMP/ci.keystore"
             echo "COUCHTV_KEYSTORE=$RUNNER_TEMP/ci.keystore" >> "$GITHUB_ENV"
           fi
