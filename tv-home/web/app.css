@@ -2243,7 +2243,7 @@ html.space-hold .news-live { animation-play-state: paused; }
 /* Space: live TV, top right above the news line. No frame: the picture fades out on all four sides
    so the Earth shows through. OK makes it full screen with sound. */
 .live { display: none; }
-html.look-space.live-on.dock-banners.theme-night .live { display: block; position: fixed; left: 60rem; top: 15.3125rem; width: 55rem; height: 26.875rem; z-index: 2; }
+html.look-space.live-on.dock-banners.theme-night .live { display: block; position: fixed; left: 60rem; top: 21rem; width: 55rem; height: 26.875rem; z-index: 2; }
 html.look-space.expanded .live { display: none !important; }
 .live-pic, .live-pic2 { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 .live-pic { -webkit-mask-image: linear-gradient(90deg, transparent 0, rgba(0,0,0,0.4) 5%, rgba(0,0,0,0.8) 11%, #000 18%, #000 82%, rgba(0,0,0,0.8) 89%, rgba(0,0,0,0.4) 95%, transparent 100%);
@@ -2288,8 +2288,8 @@ html.look-space.expanded .live { display: none !important; }
 
 /* a hairline frame, barely there; it lights up a little with the remote on the picture */
 .live::before { content: ""; position: absolute; left: 0; top: 0; right: 0; bottom: 0; border-radius: 1.875rem; pointer-events: none; z-index: 2;
-  box-shadow: inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.1); transition: box-shadow 250ms ease; }
-.live.focus::before { box-shadow: inset 0 0 0 0.09rem rgba(255, 255, 255, 0.42), 0 0 2.25rem rgba(150, 190, 255, 0.22); }
+  box-shadow: inset 0 0 0 0.09rem rgba(255, 255, 255, 0.42); transition: box-shadow 250ms ease; }
+.live.focus::before { box-shadow: inset 0 0 0 0.1875rem rgba(255, 255, 255, 0.85), 0 0 2.5rem rgba(150, 190, 255, 0.3); }
 .live.full::before { display: none; }
 
 /* Live TV1 sits left of Live TV2; one switched off leaves its place empty */
