@@ -2030,7 +2030,7 @@ html.dock-mac.theme-night .app.hop { animation: dock-hop 520ms 1; }
    behind (that is what a TV's graphics chip struggles with). The Earth stays put; only the apps
    move, one row a step. */
 .space, .swx, .apps-title { display: none; }
-html.look-space .space { display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: #03050d url("space/bg.jpg") center / cover no-repeat; pointer-events: none; overflow: hidden; }
+html.look-space .space { display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: #03050d; pointer-events: none; overflow: hidden; }
 html.look-space .scenes, html.look-space .bg, html.look-space .bgvid, html.look-space .weather-canvas, html.look-space .ambient-lighting { display: none; }
 /* the picture's layers, each the whole screen. They move with transform and opacity only, and with
    ordinary blending, so a TV's graphics chip just slides finished pictures about. They show once
@@ -2042,13 +2042,20 @@ html.look-space .scenes, html.look-space .bg, html.look-space .bgvid, html.look-
 .space.ready .sp-aurora.a2 { transform-origin: 55% 28%; animation: sp-sway2 6.5s ease-in-out infinite alternate; }
 @keyframes sp-sway1 { 0% { transform: translateX(-1.2%) skewX(-2deg); opacity: 0.45; } 50% { transform: translateX(1%) skewX(1.5deg) scaleY(1.05); opacity: 1; } 100% { transform: translateX(-0.4%) skewX(-0.5deg) scaleY(1.02); opacity: 0.6; } }
 @keyframes sp-sway2 { 0% { transform: translateX(1.4%) skewX(2deg); opacity: 0.15; } 50% { transform: translateX(-1.2%) skewX(-2deg); opacity: 0.65; } 100% { transform: translateX(0.6%) skewX(1deg); opacity: 0.25; } }
-/* the Earth drifts very slowly, its city lights glimmer */
-.space.ready .sp-earth { transform-origin: 70% 60%; animation: sp-drift 40s ease-in-out infinite alternate; }
-.space.ready .sp-lights { transform-origin: 70% 60%; animation: sp-drift 40s ease-in-out infinite alternate, sp-twinkle 3.5s ease-in-out infinite; }
-@keyframes sp-drift { from { transform: translate(0, 0) scale(1); } to { transform: translate(-0.8%, 0.35%) scale(1.012); } }
+/* the view moves as if from an orbit passing over Europe: the sky and the Earth pan together, a
+   little larger than the screen, slowly from side to side; the clock between them stays put */
+.sp-pan { position: absolute; top: -6%; left: -6%; width: 112%; height: 112%; will-change: transform; }
+.space.ready .sp-pan { animation: sp-orbit 50s ease-in-out infinite alternate; }
+@keyframes sp-orbit {
+  0% { transform: translate(3.2%, 1.2%) rotate(-0.6deg); }
+  50% { transform: translate(0, -0.6%) rotate(0deg); }
+  100% { transform: translate(-3.2%, 1%) rotate(0.6deg); }
+}
+/* its city lights glimmer */
+.space.ready .sp-lights { animation: sp-twinkle 3.5s ease-in-out infinite; }
 @keyframes sp-twinkle { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.75; } }
 /* an app or Home settings in front: everything holds still */
-html.space-hold .space img { animation-play-state: paused; }
+html.space-hold .space img, html.space-hold .sp-pan { animation-play-state: paused; }
 /* the big clock between the sky and the Earth, on the left where the sky is widest: the horizon cuts
    across its last figures, as on an iPhone's lock screen. A little see-through. */
 .space-clock { position: absolute; left: 4.625rem; top: 12.25rem; text-align: left; }
