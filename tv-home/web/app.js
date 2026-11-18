@@ -3424,8 +3424,8 @@
       // More apps: the row the remote is on stays at one height; the rows above fade away upwards
       gridEls.forEach(function (t2, i) { t2.classList.toggle("gone", Math.floor(i / GRID_COLS) < srow); });
       apps.style.bottom = "";
-      apps.style.transform = "translateX(-50%) translateY(" + (-srow * BANNER_ROW_REM) + "rem)";
-      el.classList.toggle("space-low", srow >= 1);   // from the second row the top row slides away
+      apps.style.transform = "translateX(-50%) translateY(" + (-srow * 9.625) + "rem)";   // a 7.875rem tile and its 1.75rem gap
+      el.classList.remove("space-low");   // from the second row the top row slides away
       if (LIVE_ON) liveCheck();
       return;
     }
@@ -3445,7 +3445,7 @@
   // capped at 9.5rem so the dock never reaches the Keep watching cards above it.
   var DOCK_GAP_REM = 1.25, DOCK_ROW_REM = 112;
   function dockTileRem() {
-    if (DOCK_BANNERS) return SPACE ? 20 : 12.5;
+    if (DOCK_BANNERS) return SPACE ? (expanded ? 14 : 20) : 12.5;   // Space, More apps: smaller tiles, seven to a row
     var n = DOCK_APPS + 2;
     var t = Math.floor((DOCK_ROW_REM - (n - 1) * DOCK_GAP_REM) / n * 8) / 8;
     return Math.max(7, Math.min(9.5, t));
@@ -3482,7 +3482,7 @@
       // the dock is as wide as what is in it; More apps uses all twelve columns
       // wide banner tiles: six to a row; the dock shows its first row and the rest wait below the screen
       // Space: the home's apps in one row (five in view); More apps in rows of five
-      GRID_COLS = SPACE ? (expanded ? 5 : Math.max(1, gridItems.length)) : DOCK_BANNERS ? Math.max(1, Math.min(BANNER_COLS, gridItems.length))
+      GRID_COLS = SPACE ? (expanded ? 7 : Math.max(1, gridItems.length)) : DOCK_BANNERS ? Math.max(1, Math.min(BANNER_COLS, gridItems.length))
         : expanded ? Math.min(12, Math.floor((DOCK_ROW_REM + DOCK_GAP_REM) / (dockTileRem() + DOCK_GAP_REM)))
         : Math.max(1, Math.min(12, gridItems.length));
       $("grid").style.gridTemplateColumns = "repeat(" + GRID_COLS + ", " + dockTileRem() + "rem)";
@@ -3502,8 +3502,8 @@
       if ($("all-title")) $("all-title").textContent = t("more_apps");
       // More apps: the tiles rise into place row by row, the first rows a little after each other
       if (expanded) gridEls.forEach(function (el, i) {
-        var row = Math.floor(i / 5), col = i % 5;
-        el.style.setProperty("--d", (row < 4 ? row * 70 + col * 30 : 0) + "ms");
+        var row = Math.floor(i / GRID_COLS), col = i % GRID_COLS;
+        el.style.setProperty("--d", (row < 3 ? 120 + row * 60 + col * 22 : 0) + "ms");
       });
     }
     if (NIGHT && !DOCK_BANNERS) {

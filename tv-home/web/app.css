@@ -2063,7 +2063,7 @@ html.space-hold .space img, html.space-hold .sp-pan { animation-play-state: paus
 #sc-date { visibility: hidden; margin-left: 1.125rem; font-size: 1.875rem; line-height: 2.25rem; font-weight: 600; color: rgba(255, 255, 255, 0.8); text-shadow: 0 0.125rem 0.875rem rgba(0, 0, 0, 0.5); }
 #sc-time {
   margin-top: -1.125rem; font-size: 15.625rem; line-height: 15.625rem; font-weight: 700; letter-spacing: -0.045em; font-variant-numeric: tabular-nums;
-  color: rgba(236, 242, 255, 0.62); text-shadow: 0 0 3.75rem rgba(140, 180, 255, 0.3);
+  color: rgba(236, 242, 255, 0.42); text-shadow: 0 0 3.75rem rgba(140, 180, 255, 0.3);
 }
 #sc-time small { font-size: 3.5rem; font-weight: 600; letter-spacing: 0; margin-left: 0.75rem; }
 /* depth: darker corners, and the bottom darkened so the apps read */
@@ -2218,7 +2218,6 @@ html.look-space.news-on.dock-banners.theme-night .news { display: block; positio
   transition: transform 380ms cubic-bezier(0.22, 0.8, 0.24, 1), opacity 380ms ease; }
 html.look-space.space-low .news { transform: translateY(-20rem); opacity: 0; }
 html.look-space .swx { display: none !important; }
-html.look-space.expanded .news { display: none !important; }
 .news-head { position: absolute; left: 0; top: 0; margin: 0; display: flex; align-items: center; gap: 0.75rem;
   font-size: 1.375rem; line-height: 1.75rem; font-weight: 650; letter-spacing: 0.02em; color: rgba(255, 255, 255, 0.9); text-shadow: 0 0.125rem 0.75rem rgba(0, 0, 0, 0.6); }
 .news-live { width: 0.625rem; height: 0.625rem; border-radius: 50%; background: #ff453a; box-shadow: 0 0 0.625rem #ff453a; animation: news-live 1.6s ease-in-out infinite; }
@@ -2244,7 +2243,6 @@ html.space-hold .news-live { animation-play-state: paused; }
    so the Earth shows through. OK makes it full screen with sound. */
 .live { display: none; }
 html.look-space.live-on.dock-banners.theme-night .live { display: block; position: fixed; left: 60rem; top: 21rem; width: 55rem; height: 26.875rem; z-index: 2; }
-html.look-space.expanded .live { display: none !important; }
 .live-pic, .live-pic2 { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 .live-pic { -webkit-mask-image: linear-gradient(90deg, transparent 0, rgba(0,0,0,0.45) 3%, rgba(0,0,0,0.85) 7%, #000 11%, #000 89%, rgba(0,0,0,0.85) 93%, rgba(0,0,0,0.45) 97%, transparent 100%);
   mask-image: linear-gradient(90deg, transparent 0, rgba(0,0,0,0.45) 3%, rgba(0,0,0,0.85) 7%, #000 11%, #000 89%, rgba(0,0,0,0.85) 93%, rgba(0,0,0,0.45) 97%, transparent 100%); }
@@ -2315,22 +2313,36 @@ html.look-space.dock-banners.theme-night .app.focus:not(.lifted) { transform: tr
 html.look-space.dock-banners.theme-night .app.focus:not(.lifted) .face { box-shadow: 0 1.75rem 3.25rem rgba(0, 0, 0, 0.55), 0 0 3rem var(--glow, rgba(150, 190, 255, 0.45)); }
 html.look-space.dock-banners.theme-night .app.focus:not(.lifted) .face.banner img { opacity: 1; }
 
-/* Space, More apps: a full screen view. The home fades and darkens behind, "More apps" at the top,
-   the apps in rows of five rising into place; the row the remote is on stays at one height and the
-   rows above it fade away. Back fades it all out again. */
+/* Space, More apps: a frosted sheet slides up from the bottom over the lower half. Above it the
+   home stays in view, dimmed: the clock, live TV and the Earth. Smaller tiles, seven to a row; the row
+   the remote is on stays at one height and the rows above it fade away. Back slides it down again. */
 .all-shade { display: none; }
 html.look-space .all-shade { display: block; position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 4; pointer-events: none;
-  background: radial-gradient(120% 90% at 50% 0%, rgba(20, 30, 70, 0.55), rgba(3, 5, 13, 0.86) 70%), rgba(3, 5, 13, 0.35);
-  opacity: 0; visibility: hidden; transition: opacity 380ms ease, visibility 0s linear 380ms; }
+  opacity: 0; visibility: hidden; transition: opacity 380ms ease, visibility 0s linear 420ms; }
+html.look-space .all-shade::before { content: ""; position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: rgba(3, 5, 13, 0.45); }
+html.look-space .all-shade::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 33.75rem; border-radius: 2.5rem 2.5rem 0 0;
+  background: linear-gradient(170deg, rgba(150, 168, 215, 0.2) 0%, rgba(60, 74, 125, 0.24) 40%, rgba(14, 18, 38, 0.96) 100%), rgba(9, 12, 28, 0.97);
+  box-shadow: inset 0 0.09rem 0 rgba(255, 255, 255, 0.42), inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.1), 0 -1.5rem 4rem rgba(0, 0, 0, 0.45);
+  transform: translateY(100%); transition: transform 420ms cubic-bezier(0.22, 0.8, 0.24, 1); }
 html.look-space.expanded .all-shade { opacity: 1; visibility: visible; transition: opacity 380ms ease; }
-html.look-space.expanded.all-out .all-shade { opacity: 0; }
-.all-title { position: absolute; left: 5rem; top: 6.25rem; margin: 0; font-size: 3.25rem; line-height: 3.75rem; font-weight: 700; letter-spacing: -0.01em;
-  color: #fff; text-shadow: 0 0.125rem 1rem rgba(0, 0, 0, 0.6); }
-html.look-space.expanded .all-title { animation: all-in 420ms cubic-bezier(0.22, 0.8, 0.24, 1) both; }
-html.look-space.expanded.dock-banners.theme-night .apps { top: 16.5rem; z-index: 5; }
-html.look-space.expanded .quick, html.look-space.expanded #sc-time { opacity: 0; transition: opacity 300ms ease; }
-html.look-space.expanded .grid .app { animation: all-in 460ms cubic-bezier(0.22, 0.8, 0.24, 1) backwards; animation-delay: var(--d, 0ms); }
-html.look-space.expanded .grid .app.gone { opacity: 0 !important; transform: translateY(-1.5rem) scale(0.96) !important; pointer-events: none; }
-html.look-space.expanded .grid .app { transition: transform 340ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 300ms ease; }
-html.look-space.expanded.all-out .apps { opacity: 0; transition: opacity 240ms ease; }
+html.look-space.expanded .all-shade::after { transform: none; }
+html.look-space.expanded.all-out .all-shade { opacity: 0; transition: opacity 300ms ease 80ms; }
+html.look-space.expanded.all-out .all-shade::after { transform: translateY(100%); }
+.all-title { position: absolute; left: 5rem; bottom: 28.25rem; margin: 0; z-index: 1; font-size: 2.125rem; line-height: 2.5rem; font-weight: 650;
+  color: #fff; text-shadow: 0 0.125rem 0.75rem rgba(0, 0, 0, 0.5); }
+html.look-space.expanded .all-title { animation: all-in 420ms cubic-bezier(0.22, 0.8, 0.24, 1) 100ms backwards; }
+html.look-space.expanded.dock-banners.theme-night .apps { top: 40.5rem; z-index: 5; clip-path: inset(-1.5rem -3rem -10rem -3rem); }
+html.look-space.expanded .quick { opacity: 0.35; transition: opacity 300ms ease; }
+html.look-space.expanded.theme-night .grid { grid-auto-rows: 7.875rem; column-gap: 1.75rem; row-gap: 1.75rem; }
+html.look-space.expanded.dock-banners.theme-night .app { width: 14rem; height: 7.875rem; }
+html.look-space.expanded.dock-banners.theme-night .app .face { border-radius: 1.375rem; }
+html.look-space.expanded .grid .app { animation: all-in 440ms cubic-bezier(0.22, 0.8, 0.24, 1) backwards; animation-delay: var(--d, 0ms);
+  transition: transform 340ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 300ms ease; }
+html.look-space.expanded .grid .app.gone { opacity: 0 !important; visibility: hidden; transform: translateY(-1.25rem) scale(0.96) !important; pointer-events: none;
+  transition: transform 340ms ease, opacity 300ms ease, visibility 0s linear 300ms; }
+html.look-space.expanded.dock-banners.theme-night .app.focus:not(.lifted) { transform: translateY(-0.375rem) scale(1.1); }
+html.look-space.expanded.all-out .apps { opacity: 0; transition: opacity 220ms ease; }
 @keyframes all-in { from { opacity: 0; transform: translateY(2.5rem) scale(0.97); } to { opacity: 1; transform: none; } }
+html.look-space.expanded.dock-banners.theme-night .apps-title { display: none; }
+/* the sheet covers the lower part of live TV: cut it there, so no picture shows through */
+html.look-space.expanded .live:not(.full) { clip-path: inset(0 0 14.125rem 0); }
