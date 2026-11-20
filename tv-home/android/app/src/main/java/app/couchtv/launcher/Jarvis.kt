@@ -37,10 +37,11 @@ import java.util.Locale
  * Undo: `cmd role add-role-holder android.app.role.ASSISTANT com.google.android.katniss`.
  */
 object Jarvis {
-    /** speech to text on this TV (Google TV): Google's on-device recognizer, then Katniss's */
+    /** speech to text on this TV (Google TV): Katniss's (the one Google's own assistant listens
+     *  with), then Google's on-device one; on an error the next is tried */
     private val RECOGNIZERS = listOf(
-        ComponentName("com.google.android.tts", "com.google.android.apps.speech.tts.googletts.service.GoogleTTSRecognitionService"),
-        ComponentName("com.google.android.katniss", "com.google.android.apps.tvsearch.voice.recognition.KatnissRecognitionService")
+        ComponentName("com.google.android.katniss", "com.google.android.apps.tvsearch.voice.recognition.KatnissRecognitionService"),
+        ComponentName("com.google.android.tts", "com.google.android.apps.speech.tts.googletts.service.GoogleTTSRecognitionService")
     )
 
     class Service : VoiceInteractionService()
@@ -73,6 +74,8 @@ object Jarvis {
     class Page(private val act: Activity, private val web: WebView) {
         private val main = Handler(Looper.getMainLooper())
         private var rec: SpeechRecognizer? = null
+        private var recAt = -1          // which of RECOGNIZERS rec is (-1: the default)
+        private var heardAny = false
         private var tts: TextToSpeech? = null
         private var ttsReady = false
         private var pending: String? = null
@@ -82,33 +85,54 @@ object Jarvis {
         }
         private fun ev(type: String, text: String = "") = send(JSONObject().put("type", type).put("text", text))
 
-        private fun recognizer(): SpeechRecognizer? {
-            rec?.let { return it }
+        /** the recognizer at RECOGNIZERS[from] or after (one the TV has), else Android's default */
+        private fun recognizer(from: Int): SpeechRecognizer? {
+            try { rec?.destroy() } catch (e: Exception) {}
+            rec = null
             val pm = act.packageManager
-            for (c in RECOGNIZERS) {
+            for (k in from until RECOGNIZERS.size) {
+                val c = RECOGNIZERS[k]
                 val ok = try { pm.getServiceInfo(c, 0); true } catch (e: Exception) { false }
                 if (!ok) continue
-                return try { SpeechRecognizer.createSpeechRecognizer(act, c).also { rec = it } } catch (e: Exception) { null }
+                val r = try { SpeechRecognizer.createSpeechRecognizer(act, c) } catch (e: Exception) { null } ?: continue
+                rec = r; recAt = k
+                return r
             }
+            if (from > RECOGNIZERS.size) return null
+            recAt = RECOGNIZERS.size
             return try { SpeechRecognizer.createSpeechRecognizer(act).also { rec = it } } catch (e: Exception) { null }
         }
+        private fun recName(): String = if (recAt in RECOGNIZERS.indices) RECOGNIZERS[recAt].packageName.substringAfterLast('.') else "default"
 
         @JavascriptInterface
-        fun listen() {
-            main.post {
+        fun listen() { main.post { start(0) } }
+
+        private fun start(from: Int) {
+            run {
                 if (Build.VERSION.SDK_INT >= 23 && act.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
                     try { act.requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 7301) } catch (e: Exception) {}
-                    ev("error", "permission"); return@post
+                    ev("error", "permission"); return
                 }
                 try { tts?.stop() } catch (e: Exception) {}
-                val r = recognizer() ?: run { ev("error", "no_recognizer"); return@post }
+                val r = recognizer(from) ?: run { ev("error", "no_recognizer"); return }
+                heardAny = false
+                ev("using", recName())
                 r.setRecognitionListener(object : RecognitionListener {
                     override fun onReadyForSpeech(p: Bundle?) { ev("ready") }
-                    override fun onBeginningOfSpeech() { ev("begin") }
+                    override fun onBeginningOfSpeech() { heardAny = true; ev("begin") }
                     override fun onRmsChanged(db: Float) { send(JSONObject().put("type", "rms").put("db", db.toDouble())) }
                     override fun onBufferReceived(b: ByteArray?) {}
                     override fun onEndOfSpeech() { ev("end") }
-                    override fun onError(code: Int) { ev("error", code.toString()) }
+                    override fun onError(code: Int) {
+                        // this one could not hear: try the next recognizer the TV has, once each
+                        if (!heardAny && recAt < RECOGNIZERS.size) {
+                            ev("retry", recName() + " " + code)
+                            val next = recAt + 1
+                            main.postDelayed({ start(next) }, 250)
+                            return
+                        }
+                        ev("error", code.toString() + " " + recName())
+                    }
                     override fun onResults(b: Bundle?) {
                         ev("final", b?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull() ?: "")
                     }

@@ -1684,13 +1684,17 @@
       if (!window.TVJARVIS) return;
       clearTimeout(JV.hideT);
       jvShow(true); jvState(""); jvText("", "Jag lyssnar …");
-      JV.heard = "";
+      JV.heard = ""; JV.dbg = []; JV.maxDb = -99;
+      jvDebug();
       try { window.TVJARVIS.listen(); } catch (e) {}
     },
     close: function () { try { window.TVJARVIS.stop(); } catch (e) {} jvShow(false); }
   };
   window.jarvisEvent = function (e) {
     if (!e || !JV.open) return;
+    if (e.type === "using") { jvDebug("lyssnar med " + e.text); return; }
+    if (e.type === "retry") { jvDebug("fel " + e.text + ", provar nästa"); return; }
+    if (e.type === "rms" && e.db > JV.maxDb) { JV.maxDb = e.db; jvDebug(); }
     if (e.type === "rms") { var orb = $("jv-orb"); if (orb) orb.style.setProperty("--s", String(1 + Math.max(0, Math.min(10, e.db)) / 18)); return; }
     if (e.type === "partial") { JV.heard = e.text; jvText(e.text, null); return; }
     if (e.type === "end") { jvState("thinking"); var o = $("jv-orb"); if (o) o.style.setProperty("--s", "1"); return; }
@@ -1698,11 +1702,19 @@
     if (e.type === "speaking") { jvState("speaking"); return; }
     if (e.type === "spoken") { jvDone(); return; }
     if (e.type === "error") {
+      jvDebug("fel " + e.text);
       if (e.text === "permission") { jvSay("Jag behöver lov att använda mikrofonen. Tryck Tillåt och försök igen."); return; }
       if (JV.heard) { jvAnswer(JV.heard); return; }
-      jvSay(e.text === "7" || e.text === "6" ? "Jag hörde inget. Tryck på mikrofonknappen och försök igen." : "Något gick fel med lyssnandet (" + e.text + ").");
+      var code = String(e.text).split(" ")[0];
+      jvSay(code === "7" || code === "6" ? "Jag hörde inget. Tryck på mikrofonknappen och försök igen." : "Något gick fel med lyssnandet (" + e.text + ").");
     }
   };
+  // test version: which speech service listened, what went wrong, and how loud it heard you
+  function jvDebug(line) {
+    if (line) JV.dbg.push(line);
+    var el = $("jv-debug");
+    if (el) el.textContent = JV.dbg.join(" · ") + (JV.maxDb > -99 ? " · ljud max " + JV.maxDb.toFixed(1) + " dB" : "");
+  }
   function jvNorm(x) { return String(x || "").toLowerCase().replace(/[^a-z0-9åäöéü]+/g, ""); }
   function jvAnswer(text) {
     var q = String(text || "").toLowerCase(), qn = jvNorm(text);
