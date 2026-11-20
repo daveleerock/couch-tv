@@ -3184,6 +3184,8 @@
     // this TV's own input tiles (tvs[].inputs in config.json) win over the shared home.inputs
     var raw = Array.isArray(TVCFG.inputs) ? TVCFG.inputs
       : HOME.inputs || (window.COUCH_CONFIG && window.COUCH_CONFIG.home && window.COUCH_CONFIG.home.inputs);
+    // this home (Space look): the PlayStation 5 on HDMI 2 when nothing else is set
+    if ((!Array.isArray(raw) || !raw.length) && SPACE) raw = [{ port: 2, label: "PlayStation 5", icon: "ps5", image: "space/ps5.png" }];
     if (!Array.isArray(raw) || !raw.length) return [];
     var detected = inputList();
     var list = [];
@@ -3244,7 +3246,8 @@
     var inputs = resolveInputs();
     var shown = rest.filter(function (a) { return !tucked(a); });
     var keep = Math.max(0, DOCK_APPS - inputs.length);   // pinned inputs take dock places, so they are never pushed behind More apps
-    var items = shown.slice(0, keep).concat(inputs, shown.slice(keep), screens, rest.filter(tucked));
+    var items = SPACE ? inputs.concat(shown.slice(0, keep), shown.slice(keep), screens, rest.filter(tucked))   // Space: a console first in the row
+      : shown.slice(0, keep).concat(inputs, shown.slice(keep), screens, rest.filter(tucked));
     var line = Math.min(DOCK_APPS, shown.length + inputs.length);
     var o = data.order;
     if (o && o.saved) {
@@ -3253,10 +3256,13 @@
       var known = items.filter(function (it) { return at[it.package] !== undefined; })
         .sort(function (a, b) { return at[a.package] - at[b.package]; });
       var gained = items.filter(function (it) { return at[it.package] === undefined; });   // new apps go below the line
-      items = known.concat(gained);
+      // a console tile new to the arrangement goes first instead, so it is not hidden in More apps
+      var newInputs = gained.filter(function (it) { return it.kind === "input"; });
+      gained = gained.filter(function (it) { return it.kind !== "input"; });
+      items = newInputs.concat(known, gained);
       // the line counts the apps above it that this TV still has
       var above = o.packages.slice(0, o.line).filter(function (p) { return known.some(function (it) { return it.package === p; }); }).length;
-      line = Math.min(DOCK_APPS, above);
+      line = Math.min(DOCK_APPS, above + newInputs.length);
     }
     return { items: items, line: line };
   }
