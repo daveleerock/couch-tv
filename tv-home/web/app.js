@@ -1800,9 +1800,9 @@
         return '<div class="jvr-item" data-r="' + (JS.rows.length - 1) + '" data-c="' + i + '">' + (src ? '<img src="' + esc(src) + '" alt="">' : '<span class="jvr-ic">▶</span>') + esc(a.name) + "</div>";
       }).join("") + "</div>";
     }
-    JS.rows.push(where.slice(0, 7));
-    html += '<p class="jvr-head">Sök ”' + esc(q) + '” i</p><div class="jvr-row">' + where.slice(0, 7).map(function (w, i) {
-      return '<div class="jvr-item" data-r="' + (JS.rows.length - 1) + '" data-c="' + i + '"><span class="jvr-ic">' + (w.pkg === "google" ? "✦" : "⌕") + "</span>" + esc(w.name) + "</div>";
+    JS.rows.push(where.slice(0, 6));
+    html += '<p class="jvr-head">Sök ”' + esc(q) + '” i</p><div class="jvr-row">' + where.slice(0, 6).map(function (w, i) {
+      return '<div class="jvr-item" data-r="' + (JS.rows.length - 1) + '" data-c="' + i + '"><span class="jvr-ic">' + (w.pkg === "google" ? "\u2726" : '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#bfe4ff" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>') + "</span>" + esc(w.name) + "</div>";
     }).join("") + "</div>";
     box.innerHTML = html;
     if (JS.ri >= JS.rows.length) JS.ri = JS.rows.length - 1;
