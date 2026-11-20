@@ -151,6 +151,46 @@ object Jarvis {
             }
         }
 
+        /** brings up the TV's keyboard for the search box the page has just focused */
+        @JavascriptInterface
+        fun keyboard() {
+            main.postDelayed({
+                try {
+                    web.requestFocus()
+                    val imm = act.getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                    imm.showSoftInput(web, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+                } catch (e: Exception) {}
+            }, 120)
+        }
+
+        /** searches for q in an app: its own search, else its search page, else just opens it;
+         *  "google" is Google TV's search across all the apps */
+        @JavascriptInterface
+        fun search(pkg: String, q: String): Boolean {
+            val query = q.trim().take(120)
+            if (query.isEmpty()) return false
+            val enc = android.net.Uri.encode(query)
+            val tries = mutableListOf<Intent>()
+            if (pkg == "google") {
+                tries.add(Intent("android.search.action.GLOBAL_SEARCH").putExtra(android.app.SearchManager.QUERY, query))
+                tries.add(Intent(Intent.ACTION_WEB_SEARCH).putExtra(android.app.SearchManager.QUERY, query))
+            } else {
+                if (!pkg.matches(Regex("[A-Za-z0-9._]{3,100}"))) return false
+                tries.add(Intent(Intent.ACTION_SEARCH).setPackage(pkg).putExtra(android.app.SearchManager.QUERY, query))
+                when (pkg) {
+                    "com.google.android.youtube.tv" -> tries.add(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com/results?search_query=$enc")).setPackage(pkg))
+                    "com.netflix.ninja" -> tries.add(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.netflix.com/search?q=$enc")).setPackage(pkg))
+                    "com.spotify.tv.android" -> tries.add(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("spotify:search:$enc")).setPackage(pkg))
+                }
+                act.packageManager.getLeanbackLaunchIntentForPackage(pkg)?.let { tries.add(it) }
+                act.packageManager.getLaunchIntentForPackage(pkg)?.let { tries.add(it) }
+            }
+            for (i in tries) {
+                try { act.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); return true } catch (e: Exception) {}
+            }
+            return false
+        }
+
         @JavascriptInterface
         fun stop() {
             main.post {

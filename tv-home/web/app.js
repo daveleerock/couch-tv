@@ -1359,7 +1359,7 @@
     var ct = $("sc-time"), cd = $("sc-date");
     var tm = hm + (CLOCK24 ? "" : "<small>" + esc(h < 12 ? t("am") : t("pm")) + "</small>");
     if (ct) ct.innerHTML = tm;
-    if (cd) cd.textContent = day;
+    if (cd) cd.textContent = SPACE ? jvDate() : day;
     var box = $("swx");
     if (!box) return;
     var w = WX_SHOW && data.weather && data.weather.temp != null ? data.weather : null;
@@ -1613,7 +1613,7 @@
   }
   function liveSync() {
     var api = SPACE && !!window.TVNEWS && typeof window.TVNEWS.liveStream === "function";
-    LIVE.forEach(function (P) { P.on = api && ST[P.setting] !== false; });
+    LIVE.forEach(function (P) { P.on = false; });   // design "Jarvis": no live TV
     LIVE_ON = LIVE.some(function (P) { return P.on; });
     document.documentElement.classList.toggle("live-on", LIVE_ON);
     if (!liveInit) {
@@ -1763,6 +1763,91 @@
     if (/tack/.test(q)) { jvSay("Varsågod."); return; }
     jvSay("Jag hörde: " + text + ". Det kan jag inte än.");
   }
+
+  // ---- Space: Jarvis search ----
+  // OK on the bar opens the TV's keyboard; as you type, the apps that match and "search for it in"
+  // the video apps you have show where the apps were. Down (or Search on the keyboard) goes to them,
+  // OK opens the app, or the app's own search for what you typed (Google TV's search for all of them).
+  var JS_WHERE = [
+    ["google", "Google TV (alla appar)"], ["com.google.android.youtube.tv", "YouTube"], ["com.netflix.ninja", "Netflix"],
+    ["se.svt.android.svtplay", "SVT Play"], ["se.tv4.tv4playtab", "TV4 Play"], ["com.viaplay.android", "Viaplay"],
+    ["se.telia.play", "Telia Play"], ["com.disney.disneyplus", "Disney+"], ["com.amazon.amazonvideo.livingroom", "Prime Video"],
+    ["com.hbo.hbonow", "Max"], ["com.wbd.stream", "Max"], ["com.apple.atve.androidtv.appletv", "Apple TV"], ["com.spotify.tv.android", "Spotify"]
+  ];
+  var JS = { rows: [], ri: 0, ci: 0, q: "" };
+  function jvDate() {
+    var d = new Date(), wd = ["söndag", "måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag"][d.getDay()];
+    var mo = ["januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"][d.getMonth()];
+    return wd.charAt(0).toUpperCase() + wd.slice(1) + " " + d.getDate() + " " + mo;
+  }
+  function jsHave(pkg) { return pkg === "google" || (data.apps || []).some(function (a) { return a.package === pkg; }); }
+  function jsSearching() { return document.documentElement.classList.contains("jv-searching"); }
+  function jsRender() {
+    var q = ($("jv-input").value || "").trim(), box = $("jvh-results");
+    JS.q = q;
+    document.documentElement.classList.toggle("jv-searching", !!q);
+    JS.rows = [];
+    if (!q) { box.innerHTML = ""; return; }
+    var qn = jvNorm(q);
+    var apps = (data.apps || []).filter(function (a) { return jvNorm(a.name).indexOf(qn) >= 0; }).slice(0, 6);
+    var where = [], seen = {};
+    JS_WHERE.forEach(function (w) { if (!seen[w[0]] && jsHave(w[0])) { seen[w[0]] = 1; where.push({ kind: "search", pkg: w[0], name: w[1] }); } });
+    var html = "";
+    if (apps.length) {
+      JS.rows.push(apps.map(function (a) { return { kind: "app", pkg: a.package, name: a.name, app: a }; }));
+      html += '<p class="jvr-head">Appar</p><div class="jvr-row">' + apps.map(function (a, i) {
+        var src = a.banner || iconUrl(a.package);
+        return '<div class="jvr-item" data-r="' + (JS.rows.length - 1) + '" data-c="' + i + '">' + (src ? '<img src="' + esc(src) + '" alt="">' : '<span class="jvr-ic">▶</span>') + esc(a.name) + "</div>";
+      }).join("") + "</div>";
+    }
+    JS.rows.push(where.slice(0, 7));
+    html += '<p class="jvr-head">Sök ”' + esc(q) + '” i</p><div class="jvr-row">' + where.slice(0, 7).map(function (w, i) {
+      return '<div class="jvr-item" data-r="' + (JS.rows.length - 1) + '" data-c="' + i + '"><span class="jvr-ic">' + (w.pkg === "google" ? "✦" : "⌕") + "</span>" + esc(w.name) + "</div>";
+    }).join("") + "</div>";
+    box.innerHTML = html;
+    if (JS.ri >= JS.rows.length) JS.ri = JS.rows.length - 1;
+    if (zone === "results") paintFocus();
+  }
+  function jsPaint() {
+    Array.prototype.forEach.call(document.querySelectorAll("#jvh-results .jvr-item"), function (el) {
+      el.classList.toggle("focus", zone === "results" && +el.dataset.r === JS.ri && +el.dataset.c === JS.ci);
+    });
+  }
+  function jsOpen() {
+    var it = (JS.rows[JS.ri] || [])[JS.ci];
+    if (!it) return;
+    if (it.kind === "app") { if (TV && TV.launch) TV.launch(it.pkg); return; }
+    try { if (window.TVJARVIS && window.TVJARVIS.search) window.TVJARVIS.search(it.pkg, JS.q); } catch (e) {}
+  }
+  function jsType() {
+    var inp = $("jv-input");
+    try { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } catch (e) {}
+    try { if (window.TVJARVIS && window.TVJARVIS.keyboard) window.TVJARVIS.keyboard(); } catch (e) {}
+  }
+  function jsToResults() {
+    try { $("jv-input").blur(); } catch (e) {}
+    if (!JS.rows.length) return;
+    zone = "results"; JS.ri = 0; JS.ci = 0;
+    paintFocus();
+  }
+  // keys while the search box has them: typing; Enter (Search on the keyboard) or down go to the results
+  function jsKey(e) {
+    var inp = $("jv-input");
+    if (!inp || document.activeElement !== inp) return false;
+    var down = e.key === "ArrowDown" || e.keyCode === 40, up = e.key === "ArrowUp" || e.keyCode === 38;
+    if (e.key === "Enter" || e.keyCode === 13) {
+      if (!inp.value.trim()) return true;   // OK in an empty box: the TV's keyboard comes up
+      e.preventDefault(); jsToResults(); return true;
+    }
+    if (e.key === "Escape" || e.key === "Esc") { e.preventDefault(); inp.blur(); zone = "search"; paintFocus(); return true; }
+    if (down) { e.preventDefault(); if (JS.rows.length) jsToResults(); else { inp.blur(); zone = "grid"; g = 0; paintFocus(); } return true; }
+    if (up) { e.preventDefault(); inp.blur(); if (hasQuick()) { zone = "quick"; qi = 0; } paintFocus(); return true; }
+    return true;
+  }
+  (function () {
+    var inp = document.getElementById("jv-input");
+    if (inp) inp.addEventListener("input", jsRender);
+  })();
 
   function spaceLayers() {
     var box = $("space"), imgs = box.querySelectorAll("img"), left = imgs.length;
@@ -3530,13 +3615,17 @@
       // the settings button slide away.
       el.classList.toggle("space-row", !expanded);
       if (!expanded) {
-        // one row: it slides along so the app the remote is on stays among the five in view
+        // rows of five, one in view: the next peeks in at the bottom; going down, the rows above
+        // slide up and fade away behind the Earth
         var on = zone === "grid" || zone === "gear" || zone === "appmenu";
-        var nApps = gridEls.length, maxFirst = Math.max(0, nApps - 5);
-        if (on) { if (g < spaceFirst) spaceFirst = g; else if (g > spaceFirst + 4) spaceFirst = g - 4; }
-        spaceFirst = Math.max(0, Math.min(spaceFirst, maxFirst));
+        var row = on ? Math.floor(g / 5) : 0;
         apps.style.bottom = ""; apps.style.transform = "";
-        $("grid").style.transform = "translateX(" + (-spaceFirst * 22.5) + "rem)";
+        $("grid").style.transform = "translateY(" + (-row * 15.625) + "rem)";
+        gridEls.forEach(function (t2, i) {
+          var rr = Math.floor(i / 5);
+          t2.classList.toggle("gone", rr < row);
+          t2.classList.toggle("peek", rr > row);
+        });
         el.classList.remove("space-low");
         return;
       }
@@ -3603,7 +3692,7 @@
       // the dock is as wide as what is in it; More apps uses all twelve columns
       // wide banner tiles: six to a row; the dock shows its first row and the rest wait below the screen
       // Space: the home's apps in one row (five in view); More apps in rows of five
-      GRID_COLS = SPACE ? (expanded ? 7 : Math.max(1, gridItems.length)) : DOCK_BANNERS ? Math.max(1, Math.min(BANNER_COLS, gridItems.length))
+      GRID_COLS = SPACE ? (expanded ? 7 : 5) : DOCK_BANNERS ? Math.max(1, Math.min(BANNER_COLS, gridItems.length))
         : expanded ? Math.min(12, Math.floor((DOCK_ROW_REM + DOCK_GAP_REM) / (dockTileRem() + DOCK_GAP_REM)))
         : Math.max(1, Math.min(12, gridItems.length));
       $("grid").style.gridTemplateColumns = "repeat(" + GRID_COLS + ", " + dockTileRem() + "rem)";
@@ -3673,6 +3762,7 @@
     if ($("news")) $("news").classList.remove("focus");
     if (zone !== "news") newsLeave();
     LIVE.forEach(function (P) { var el = lv(P); if (el) el.classList.remove("focus"); });
+    if ($("jvh-bar")) $("jvh-bar").classList.remove("focus");
     if (zone !== "live") liveSound(false);
     $("people").classList.remove("focus");
     Array.prototype.forEach.call($("people").children, function (el) { el.classList.remove("focus"); });
@@ -3782,6 +3872,9 @@
       showPhoto();
       return;
     }
+    jsPaint();
+    if (zone === "search") { $("jvh-bar").classList.add("focus"); renderHint(); return; }
+    if (zone === "results") { renderHint(); return; }
     if (zone === "live") {
       if (!liveVisible()) { zone = "grid"; paintFocus(); return; }
       if (!livePanel().on) { var lk = livePick(liveSel); if (lk < 0) { zone = "grid"; paintFocus(); return; } liveSel = lk; }
@@ -3915,6 +4008,22 @@
       paintFocus();
       return;
     }
+    if (zone === "search") {
+      if (dy < 0 && hasQuick()) { zone = "quick"; qi = 0; }
+      else if (dy > 0 && jsSearching() && JS.rows.length) { zone = "results"; JS.ri = 0; JS.ci = 0; }
+      else if (dy > 0 && gridEls.length) { zone = "grid"; g = Math.min(g % 5, gridEls.length - 1); }
+      paintFocus();
+      return;
+    }
+    if (zone === "results") {
+      var row = JS.rows[JS.ri] || [];
+      if (dx) JS.ci = Math.max(0, Math.min(row.length - 1, JS.ci + dx));
+      else if (dy < 0) { if (JS.ri > 0) { JS.ri--; } else zone = "search"; }
+      else if (dy > 0 && JS.ri < JS.rows.length - 1) JS.ri++;
+      JS.ci = Math.min(JS.ci, Math.max(0, (JS.rows[JS.ri] || []).length - 1));
+      paintFocus();
+      return;
+    }
     if (zone === "live") {
       if (liveFull) { if (dx) liveSwitch(dx); else liveWake(); return; }
       if (dx) { liveSwitch(dx); paintFocus(); return; }
@@ -3944,7 +4053,8 @@
       else if (dx) qi = Math.max(0, Math.min(nq - 1, qi + dx));
       else if (dy > 0) {
         // Space: nothing sits between the settings button and the apps (the cards' row is hidden)
-        if (SPACE && liveVisible()) toLive(1);
+        if (SPACE && $("jvh-bar")) zone = "search";
+        else if (SPACE && liveVisible()) toLive(1);
         else if (SPACE && gridEls.length) { zone = "grid"; g = Math.min(GRID_COLS, gridEls.length) - 1; }
         else if (!NIGHT && npReach()) zone = "np";
         else if (peopleOn()) toPeople();
@@ -3987,7 +4097,8 @@
         }
       } else if (dy < 0 && row === 0) {
         // Space: the row above the apps is hidden; up goes straight to the settings button
-        if (SPACE && liveVisible() && !expanded && gridEls[g]) {
+        if (SPACE && !expanded && $("jvh-bar")) zone = "search";
+        else if (SPACE && liveVisible() && !expanded && gridEls[g]) {
           var gb = gridEls[g].getBoundingClientRect();
           toLive(gb.left + gb.width / 2 < window.innerWidth / 2 ? 0 : 1);   // the picture above the app
         }
@@ -4043,7 +4154,7 @@
     if (document.documentElement.dir === "rtl") dx = -dx;
     if (lift || plift || SET.lift) return;   // carrying something: the ends stay the ends
     if (zone === "smart" || zone === "ambient") return;   // they keep their own focus
-    if (SPACE && (zone === "grid" || zone === "quick" || zone === "shelf" || zone === "np" || zone === "people" || zone === "news" || zone === "live")) return;   // Space: the ends of the home stay the ends
+    if (SPACE && (zone === "grid" || zone === "quick" || zone === "shelf" || zone === "np" || zone === "people" || zone === "news" || zone === "live" || zone === "search" || zone === "results")) return;   // Space: the ends of the home stay the ends
     var d = dy || dx;
     if (zone === "settings") {
       if (!dy) return;   // left and right change a value or the column
@@ -4150,6 +4261,8 @@
 
   function goHome() {
     if (JV.open) { window.jarvis.close(); return; }
+    if (zone === "results") { zone = "search"; paintFocus(); return; }
+    if (zone === "search" && (jsSearching() || document.activeElement === $("jv-input"))) { try { $("jv-input").blur(); } catch (e) {} $("jv-input").value = ""; jsRender(); paintFocus(); return; }
     if (liveFull) { liveExitFull(); paintFocus(); return; }
     if (screenOffActive) {
       toggleScreenOff(false);
@@ -4210,7 +4323,7 @@
   function hold() {
     touched = true;
     if (zone === "settings") return setHold();
-    if (zone === "gear" || zone === "smart" || zone === "updask" || zone === "inputs" || zone === "shelfmenu" || zone === "news" || zone === "live") return false;
+    if (zone === "gear" || zone === "smart" || zone === "updask" || zone === "inputs" || zone === "shelfmenu" || zone === "news" || zone === "live" || zone === "search" || zone === "results") return false;
     if (lift) { dropLift(); return true; }
     if (zone === "pmenu") {
       if (plift) dropPeople();
@@ -4245,6 +4358,8 @@
     }
     if (zone === "quick") { quickAction(); return; }
     if (zone === "news") { newsOpen(); return; }
+    if (zone === "search") { jsType(); return; }
+    if (zone === "results") { jsOpen(); return; }
     if (zone === "live") { if (liveFull) liveWake(); else liveEnterFull(); return; }
     if (zone === "people") {
       if (isHead()) { openPop(); paintFocus(); return; }
@@ -5768,6 +5883,7 @@
     if (kidsOn()) { okReset(); if (window.KidsMode.key(e)) e.preventDefault(); return; }
     if (idlePhotoInput(e)) return;
     if (typingKey(e)) return;   // typing a place or a name: the keys belong to the text box
+    if (jsKey(e)) return;   // Jarvis search: the keys belong to the search box
     if (isOk(e)) {
       e.preventDefault();
       if (e.repeat || okDown) return;   // a held key repeating: the timer is already running

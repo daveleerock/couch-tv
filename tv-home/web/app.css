@@ -2372,3 +2372,70 @@ html.look-space.expanded .live:not(.full) { clip-path: inset(0 0 14.125rem 0); }
 .jv-heard { font-size: 2rem; line-height: 2.5rem; color: rgba(200, 225, 255, 0.75); font-style: italic; min-height: 2.5rem; }
 .jv-say { margin-top: 0.75rem !important; font-size: 2.625rem; line-height: 3.25rem; font-weight: 650; color: #fff; max-width: 80rem; }
 .jv-debug { margin-top: 0.75rem !important; font-size: 1.25rem; line-height: 1.625rem; color: rgba(160, 190, 230, 0.7); font-family: monospace; }
+
+/* Space, Jarvis design: the date and a big blue clock top left in front of the Earth; under them
+   Jarvis (a ring with a moving wave, its name, a line of light) and the search bar; the apps below in
+   rows of five, one row in view. */
+.jv-home { display: none; }
+html.look-space .jv-home { display: block; position: fixed; left: 0; top: 0; width: 0; height: 0; z-index: 3; }
+.jvh-orb { position: fixed; left: 5.375rem; top: 18.875rem; width: 9.5rem; height: 9.5rem; border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, rgba(20, 50, 120, 0.9), rgba(5, 12, 40, 0.95) 70%);
+  box-shadow: 0 0 2.25rem rgba(80, 170, 255, 0.55), inset 0 0 1.625rem rgba(90, 170, 255, 0.35); }
+.jvh-orb::before { content: ""; position: absolute; left: -0.25rem; top: -0.25rem; right: -0.25rem; bottom: -0.25rem; border-radius: 50%;
+  background: conic-gradient(from 200deg, #5ad1ff, #6a7dff, #c26bff, #5ad1ff); animation: jv-spin 7s linear infinite;
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 0.25rem), #000 calc(100% - 0.25rem)); mask: radial-gradient(farthest-side, transparent calc(100% - 0.25rem), #000 calc(100% - 0.25rem)); }
+.jvh-wave { position: absolute; left: 2.125rem; top: 2.875rem; width: 5.25rem; height: 3.75rem; display: flex; align-items: center; justify-content: space-between; }
+.jvh-wave b { width: 0.375rem; border-radius: 0.2rem; background: linear-gradient(180deg, #a9e6ff, #4fa6ff); box-shadow: 0 0 0.5rem #4fb4ff; animation: jv-bar 1.4s ease-in-out infinite; }
+.jvh-wave b:nth-child(1) { height: 1.375rem; animation-delay: -0.2s; } .jvh-wave b:nth-child(2) { height: 2.25rem; animation-delay: -0.5s; }
+.jvh-wave b:nth-child(3) { height: 3.375rem; animation-delay: -0.1s; } .jvh-wave b:nth-child(4) { height: 2.5rem; animation-delay: -0.7s; }
+.jvh-wave b:nth-child(5) { height: 3.625rem; animation-delay: -0.3s; } .jvh-wave b:nth-child(6) { height: 2.625rem; animation-delay: -0.9s; }
+.jvh-wave b:nth-child(7) { height: 1.875rem; animation-delay: -0.4s; } .jvh-wave b:nth-child(8) { height: 1.25rem; animation-delay: -0.6s; }
+@keyframes jv-bar { 0%, 100% { transform: scaleY(0.55); } 50% { transform: scaleY(1); } }
+html.space-hold .jvh-wave b, html.space-hold .jvh-orb::before { animation-play-state: paused; }
+.jvh-title { position: fixed; left: 17.1875rem; top: 19.5rem; margin: 0; font-size: 4.625rem; line-height: 5rem; font-weight: 700; letter-spacing: -0.01em; text-shadow: 0 0.125rem 1rem rgba(0, 0, 0, 0.5); }
+.jvh-sub { position: fixed; left: 17.3125rem; top: 24.875rem; margin: 0; font-size: 1.9375rem; line-height: 2.5rem; color: rgba(225, 235, 255, 0.92); text-shadow: 0 0.125rem 0.75rem rgba(0, 0, 0, 0.6); }
+.jvh-line { position: fixed; left: 15.625rem; top: 26.875rem; width: 56.25rem; height: 8.75rem; pointer-events: none; }
+.jvh-line path { stroke: #5ab4ff; stroke-width: 3; opacity: 0.85; filter: drop-shadow(0 0 0.625rem #4fa6ff); }
+.jvh-bar { position: fixed; left: 5.125rem; top: 30.375rem; width: 60.9375rem; height: 5.75rem; border-radius: 2.875rem; box-sizing: border-box; display: flex; align-items: center; gap: 1.625rem; padding: 0 2.375rem;
+  background: linear-gradient(180deg, rgba(10, 22, 60, 0.75), rgba(6, 14, 42, 0.8));
+  box-shadow: inset 0 0 0 0.16rem #4ea8ff, 0 0 1.625rem rgba(70, 160, 255, 0.55), inset 0 0 1.5rem rgba(70, 150, 255, 0.25);
+  transition: box-shadow 250ms ease, transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+.jvh-bar svg { width: 2.5rem; height: 2.5rem; flex: none; color: #9ad8ff; filter: drop-shadow(0 0 0.5rem #4fb4ff); }
+.jvh-bar input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font: inherit; font-size: 2.0625rem; color: #fff; -webkit-appearance: none; appearance: none; }
+.jvh-bar input::placeholder { color: rgba(230, 238, 255, 0.8); }
+.jvh-bar input::-webkit-search-cancel-button { display: none; }
+.jvh-bar.focus { transform: scale(1.015); box-shadow: inset 0 0 0 0.22rem #bfe4ff, 0 0 2.75rem rgba(90, 175, 255, 0.85), inset 0 0 1.75rem rgba(90, 170, 255, 0.35); }
+html.look-space .live { display: none !important; }
+html.look-space.space-row.dock-banners.theme-night .apps { top: 49.375rem; clip-path: none; }
+html.look-space.space-row .grid { grid-auto-rows: 11.25rem; row-gap: 4.375rem; }
+html.look-space.space-row .grid .app { transition: transform 340ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 380ms ease; }
+html.look-space.space-row .grid .app.gone { opacity: 0 !important; pointer-events: none; }
+html.look-space.space-row .grid .app.peek { opacity: 0.7; }
+/* the apps sit in their own see-through band: the Earth darkens softly behind them, no edge */
+html.look-space.space-row #apps-section::before { content: ""; position: fixed; left: 0; right: 0; top: 40rem; bottom: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(3, 6, 18, 0) 0%, rgba(3, 6, 18, 0.5) 28%, rgba(3, 6, 18, 0.72) 100%); }
+
+/* the clock in front of the Earth, blue, with the date above it */
+html.look-space .space-clock { left: 5.375rem; top: 3.25rem; z-index: 3; }
+html.look-space #sc-date { visibility: visible; margin: 0 0 0.25rem 0.5rem; font-size: 1.875rem; line-height: 2.5rem; font-weight: 500; color: rgba(255, 255, 255, 0.92); }
+html.look-space #sc-time { margin-top: 0; font-size: 11rem; line-height: 11rem; font-weight: 700; letter-spacing: -0.03em;
+  background: linear-gradient(180deg, #8fd2ff 0%, #4aa6ff 45%, #2a6ee6 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-shadow: none; filter: drop-shadow(0 0 1.375rem rgba(70, 160, 255, 0.45)); }
+html.look-space .space::after { content: ""; position: absolute; left: 0; top: 0; right: 0; bottom: 0; pointer-events: none;
+  background: linear-gradient(90deg, rgba(3, 6, 20, 0.6) 0%, rgba(3, 6, 20, 0.3) 38%, rgba(3, 6, 20, 0) 60%); }
+/* the news line top right, beside the settings button */
+html.look-space.news-on.dock-banners.theme-night .news { left: 40rem; width: 66.25rem; top: 4.75rem; height: 3.625rem; }
+html.look-space .news-strip { height: 3.625rem; border-radius: 1.8125rem; }
+/* the search results (Jarvis search) take the place of the apps while you search */
+.jvh-results { display: none; }
+html.look-space.jv-searching .jvh-results { display: block; position: fixed; left: 5rem; top: 40.5rem; width: 110rem; }
+html.look-space.jv-searching .apps { opacity: 0; pointer-events: none; }
+.jvr-head { margin: 0 0 1rem 0.375rem; font-size: 1.75rem; line-height: 2.25rem; font-weight: 600; color: rgba(225, 235, 255, 0.9); }
+.jvr-row { display: flex; gap: 1.5rem; margin-bottom: 2rem; }
+.jvr-item { position: relative; display: flex; align-items: center; gap: 1rem; height: 5.5rem; padding: 0 1.75rem 0 1rem; border-radius: 1.5rem; box-sizing: border-box;
+  background: rgba(14, 26, 62, 0.72); box-shadow: inset 0 0 0 0.1rem rgba(140, 180, 255, 0.35); font-size: 1.625rem; font-weight: 500; white-space: nowrap;
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 200ms ease; }
+.jvr-item img { width: 6.125rem; height: 3.5rem; border-radius: 0.625rem; object-fit: cover; }
+.jvr-item .jvr-ic { width: 3.5rem; height: 3.5rem; border-radius: 0.875rem; display: flex; align-items: center; justify-content: center; background: rgba(80, 150, 255, 0.25); font-size: 1.75rem; }
+.jvr-item.focus { transform: scale(1.05); background: rgba(40, 70, 140, 0.85); box-shadow: inset 0 0 0 0.1875rem #bfe4ff, 0 0 2rem rgba(80, 170, 255, 0.6); }
+.jvr-none { font-size: 1.625rem; color: rgba(225, 235, 255, 0.75); margin: 0 0 2rem 0.375rem; }

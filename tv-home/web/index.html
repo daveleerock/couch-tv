@@ -125,6 +125,18 @@
     <div class="jv-orb" id="jv-orb" aria-hidden="true"><i></i><i></i><i></i><b></b></div>
     <div class="jv-text"><p class="jv-heard" id="jv-heard"></p><p class="jv-say" id="jv-say"></p><p class="jv-debug" id="jv-debug"></p></div>
   </div>
+  <!-- Space: Jarvis, a search across the apps (app.js "Jarvis search", Jarvis.kt) -->
+  <div class="jv-home" id="jv-home">
+    <div class="jvh-orb" aria-hidden="true"><div class="jvh-wave"><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b></div></div>
+    <p class="jvh-title">Jarvis</p>
+    <p class="jvh-sub">Sök bland dina appar, serier och program</p>
+    <svg class="jvh-line" viewBox="0 0 900 140" fill="none" aria-hidden="true"><path d="M0 22 C 180 22, 300 60, 450 40 S 720 0, 860 70" /></svg>
+    <div class="jvh-bar" id="jvh-bar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5l2.6 7.9 7.9 2.6-7.9 2.6L12 22.5l-2.6-7.9L1.5 12l7.9-2.6z" fill="currentColor"/></svg>
+      <input id="jv-input" type="search" autocomplete="off" spellcheck="false" placeholder="Fråga Jarvis eller sök …" enterkeyhint="search">
+    </div>
+    <div class="jvh-results" id="jvh-results"></div>
+  </div>
   <section class="apps" id="apps-section" aria-label="Apps">
     <p class="hint" id="hint" aria-live="polite"></p>
     <!-- Space: live TV from SVT Play, and the news line under it (app.js, News.kt) -->
