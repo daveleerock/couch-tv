@@ -1643,6 +1643,115 @@
     liveCheck();
   }
 
+  // ---- Jarvis: the voice assistant (a test; Jarvis.kt) ----
+  // The remote's microphone button (with Couch TV as the TV's assistant) brings the home forward and
+  // calls jarvis.wake(): the orb shows, the TV listens, and what was heard is answered out loud. It
+  // knows a few things on its own: open an app, change the live TV channel, the news, the time, the
+  // weather. Back closes it.
+  var JV = { open: false, busy: false, hideT: 0, heard: "" };
+  function jvShow(on) {
+    var el = $("jarvis");
+    if (!el) return;
+    JV.open = on;
+    el.classList.toggle("on", on);
+    if (!on) { el.classList.remove("speaking", "thinking"); clearTimeout(JV.hideT); }
+  }
+  function jvState(st) {
+    var el = $("jarvis");
+    if (!el) return;
+    el.classList.toggle("speaking", st === "speaking");
+    el.classList.toggle("thinking", st === "thinking");
+  }
+  function jvText(heard, say) {
+    if (heard != null) $("jv-heard").textContent = heard ? "”" + heard + "”" : "";
+    if (say != null) $("jv-say").textContent = say;
+  }
+  function jvSay(text, then) {
+    jvText(null, text);
+    JV.after = then || null;
+    clearTimeout(JV.hideT);
+    try { window.TVJARVIS.speak(text); } catch (e) { jvDone(); }
+  }
+  function jvDone() {
+    jvState("");
+    var then = JV.after; JV.after = null;
+    if (then) then();
+    clearTimeout(JV.hideT);
+    JV.hideT = setTimeout(function () { jvShow(false); }, 3000);
+  }
+  window.jarvis = {
+    wake: function () {
+      if (!window.TVJARVIS) return;
+      clearTimeout(JV.hideT);
+      jvShow(true); jvState(""); jvText("", "Jag lyssnar …");
+      JV.heard = "";
+      try { window.TVJARVIS.listen(); } catch (e) {}
+    },
+    close: function () { try { window.TVJARVIS.stop(); } catch (e) {} jvShow(false); }
+  };
+  window.jarvisEvent = function (e) {
+    if (!e || !JV.open) return;
+    if (e.type === "rms") { var orb = $("jv-orb"); if (orb) orb.style.setProperty("--s", String(1 + Math.max(0, Math.min(10, e.db)) / 18)); return; }
+    if (e.type === "partial") { JV.heard = e.text; jvText(e.text, null); return; }
+    if (e.type === "end") { jvState("thinking"); var o = $("jv-orb"); if (o) o.style.setProperty("--s", "1"); return; }
+    if (e.type === "final") { JV.heard = e.text || JV.heard; jvText(JV.heard, null); jvAnswer(JV.heard); return; }
+    if (e.type === "speaking") { jvState("speaking"); return; }
+    if (e.type === "spoken") { jvDone(); return; }
+    if (e.type === "error") {
+      if (e.text === "permission") { jvSay("Jag behöver lov att använda mikrofonen. Tryck Tillåt och försök igen."); return; }
+      if (JV.heard) { jvAnswer(JV.heard); return; }
+      jvSay(e.text === "7" || e.text === "6" ? "Jag hörde inget. Tryck på mikrofonknappen och försök igen." : "Något gick fel med lyssnandet (" + e.text + ").");
+    }
+  };
+  function jvNorm(x) { return String(x || "").toLowerCase().replace(/[^a-z0-9åäöéü]+/g, ""); }
+  function jvAnswer(text) {
+    var q = String(text || "").toLowerCase(), qn = jvNorm(text);
+    if (!q) { jvSay("Jag hörde inget. Försök igen."); return; }
+    // the live TV channels: "sätt på SVT2", "SVT Barn", "kunskapskanalen"
+    var chans = [[/svt ?24|tjugofyra/, "svt24"], [/barn/, "barnkanalen"], [/kunskap/, "kunskapskanalen"], [/svt ?2|svt två|tvåan/, "svt2"], [/svt ?1|svt ett|ettan/, "svt1"]];
+    if (LIVE_ON && !/öppna|starta/.test(q) || /kanal|live/.test(q)) {
+      for (var c = 0; c < chans.length; c++) if (chans[c][0].test(q)) {
+        var P = livePanel(), at = LIVE_CH.map(function (x) { return x.id; }).indexOf(chans[c][1]);
+        if (P && at >= 0 && LIVE_ON) {
+          P.i = at; keep(P.key, liveCh(P).id);
+          lv(P).classList.add("dim"); liveLoadOne(P); liveShowName(P);
+          jvSay(liveCh(P).name + " på Live TV.");
+          return;
+        }
+      }
+    }
+    // open an app by its name: "öppna Netflix", "starta YouTube", or just the name
+    var apps = (data.apps || []).slice().sort(function (a, b) { return jvNorm(b.name).length - jvNorm(a.name).length; });
+    for (var i = 0; i < apps.length; i++) {
+      var nm = jvNorm(apps[i].name);
+      if (nm.length >= 3 && qn.indexOf(nm) >= 0) {
+        var app = apps[i];
+        jvSay("Öppnar " + app.name + ".", function () { if (TV && TV.launch) TV.launch(app.package); });
+        return;
+      }
+    }
+    if (/nyhet|senaste/.test(q)) {
+      var top = (NEWS || []).slice(0, 3).map(function (n) { return n.t; });
+      jvSay(top.length ? "Här är de senaste nyheterna. " + top.join(". ") + "." : "Jag har inga nyheter just nu.");
+      return;
+    }
+    if (/klockan|vad är tiden|hur mycket är/.test(q)) {
+      var d = new Date();
+      jvSay("Klockan är " + d.getHours() + " och " + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes() + ".");
+      return;
+    }
+    if (/väder|grader|regn|kallt|varmt/.test(q)) {
+      var w = data.weather;
+      if (w && w.temp != null) {
+        jvSay("Det är " + Math.round(w.temp) + " grader ute just nu." + (w.hi != null && w.lo != null ? " I dag mellan " + Math.round(w.lo) + " och " + Math.round(w.hi) + " grader." : ""));
+      } else jvSay("Jag har inget väder just nu.");
+      return;
+    }
+    if (/^(hej|hallå|tjena|god morgon|god kväll)/.test(q)) { jvSay("Hej! Vad kan jag hjälpa dig med?"); return; }
+    if (/tack/.test(q)) { jvSay("Varsågod."); return; }
+    jvSay("Jag hörde: " + text + ". Det kan jag inte än.");
+  }
+
   function spaceLayers() {
     var box = $("space"), imgs = box.querySelectorAll("img"), left = imgs.length;
     Array.prototype.forEach.call(imgs, function (im) {
@@ -4028,6 +4137,7 @@
   }
 
   function goHome() {
+    if (JV.open) { window.jarvis.close(); return; }
     if (liveFull) { liveExitFull(); paintFocus(); return; }
     if (screenOffActive) {
       toggleScreenOff(false);

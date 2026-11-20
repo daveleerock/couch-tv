@@ -81,6 +81,7 @@ class MainActivity : Activity() {
         shown = java.lang.ref.WeakReference(this)
         CrashGuard.install(this)
         restoreTimeout()   // a press left the screen timeout short: put it back
+        if (intent?.getBooleanExtra("jarvis", false) == true) jarvisWake(0)   // started by the microphone button (Jarvis.kt)
         // apply.sh starting the home on purpose (new settings) is always a fresh try.
         if (intent?.hasExtra("bridge") == true || intent?.hasExtra("config_b64") == true) CrashGuard.reset(this)
         // Crashed twice in the last few minutes: stand aside for the TV's own home rather than
@@ -170,6 +171,8 @@ class MainActivity : Activity() {
             main.postDelayed({ js("window.tv && tv.settingsKey && tv.settingsKey()") }, 250)
             return
         }
+        // The remote's microphone button, with Couch TV as the TV's assistant (Jarvis.kt)
+        if (intent.getBooleanExtra("jarvis", false)) { jarvisWake(0); return }
         // HOME pressed while we are already in front: back to the first tile.
         js("window.tv && tv.home()")
     }
@@ -390,6 +393,7 @@ class MainActivity : Activity() {
         addJavascriptInterface(HomeAssistant.Page(this@MainActivity, this), "TVHA")   // smart home, see HomeAssistant.kt
         addJavascriptInterface(Updater.Page(this@MainActivity, this), "TVUP")   // updates from GitHub releases, see Updater.kt
         addJavascriptInterface(News.Page(this@MainActivity, this), "TVNEWS")   // the Space news line, see News.kt
+        addJavascriptInterface(Jarvis.Page(this@MainActivity, this), "TVJARVIS")   // the voice assistant, see Jarvis.kt
         webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
                 if (!loadFailed && url.startsWith("http")) {
@@ -599,6 +603,12 @@ class MainActivity : Activity() {
             else -> "application/octet-stream"
         }
         return type
+    }
+
+    /** wakes Jarvis on the page, waiting a little for the page if it is still loading */
+    private fun jarvisWake(tries: Int) {
+        if (pageReady) { main.postDelayed({ js("window.jarvis && jarvis.wake()") }, 200); return }
+        if (tries < 60) main.postDelayed({ jarvisWake(tries + 1) }, 200)
     }
 
     private fun js(code: String) {

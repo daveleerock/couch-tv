@@ -120,6 +120,11 @@
   </div>
   <!-- Space: More apps covers the home; its title (app.js) -->
   <div class="all-shade" id="all-shade" aria-hidden="true"><h2 class="all-title" id="all-title"></h2></div>
+  <!-- Jarvis, the voice assistant (app.js, Jarvis.kt): the remote's microphone button wakes it -->
+  <div class="jarvis" id="jarvis" aria-live="polite">
+    <div class="jv-orb" id="jv-orb" aria-hidden="true"><i></i><i></i><i></i><b></b></div>
+    <div class="jv-text"><p class="jv-heard" id="jv-heard"></p><p class="jv-say" id="jv-say"></p></div>
+  </div>
   <section class="apps" id="apps-section" aria-label="Apps">
     <p class="hint" id="hint" aria-live="polite"></p>
     <!-- Space: live TV from SVT Play, and the news line under it (app.js, News.kt) -->

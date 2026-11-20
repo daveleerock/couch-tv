@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Jarvis as the TV's assistant (Jarvis.kt): the remote's microphone button wakes it on the home. -->
+<voice-interaction-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:sessionService="app.couchtv.launcher.Jarvis$SessionService"
+    android:recognitionService="app.couchtv.launcher.Jarvis$Recognizer"
+    android:supportsAssist="true" />

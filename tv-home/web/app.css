@@ -2346,3 +2346,28 @@ html.look-space.expanded.all-out .apps { opacity: 0; transition: opacity 220ms e
 html.look-space.expanded.dock-banners.theme-night .apps-title { display: none; }
 /* the sheet covers the lower part of live TV: cut it there, so no picture shows through */
 html.look-space.expanded .live:not(.full) { clip-path: inset(0 0 14.125rem 0); }
+
+/* Jarvis: a glowing blue orb with what was heard and the answer beside it, over the top left of the
+   home. It breathes while it listens, swells with your voice, and ripples while it speaks. */
+.jarvis { position: fixed; left: 5rem; top: 10.5rem; z-index: 30; display: flex; align-items: center; gap: 2.5rem; max-width: 100rem;
+  pointer-events: none; opacity: 0; transform: translateY(-1rem) scale(0.98); transition: opacity 350ms ease, transform 350ms cubic-bezier(0.22, 0.8, 0.24, 1); }
+.jarvis.on { opacity: 1; transform: none; }
+.jarvis::before { content: ""; position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; z-index: -1;
+  background: linear-gradient(180deg, rgba(3, 6, 18, 0.55) 0%, rgba(3, 6, 18, 0.85) 18%, rgba(3, 6, 18, 0.85) 45%, rgba(3, 6, 18, 0.35) 75%, rgba(3, 6, 18, 0) 100%); }
+.jv-orb { position: relative; width: 10rem; height: 10rem; flex: none; --s: 1; }
+.jv-orb b { position: absolute; left: 2.5rem; top: 2.5rem; width: 5rem; height: 5rem; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #e9f6ff, #6cc4ff 35%, #1f6fd6 70%, rgba(20, 70, 180, 0.2) 100%);
+  box-shadow: 0 0 2.5rem #4fb4ff, 0 0 5rem rgba(60, 150, 255, 0.6); transform: scale(var(--s)); transition: transform 90ms linear; }
+.jv-orb i { position: absolute; left: 0; top: 0; width: 10rem; height: 10rem; border-radius: 50%; box-sizing: border-box;
+  border: 0.1875rem solid rgba(110, 200, 255, 0.55); box-shadow: 0 0 1.25rem rgba(80, 170, 255, 0.45), inset 0 0 1.25rem rgba(80, 170, 255, 0.3); }
+.jv-orb i:nth-child(1) { animation: jv-spin 6s linear infinite; border-style: dashed; }
+.jv-orb i:nth-child(2) { left: 1rem; top: 1rem; width: 8rem; height: 8rem; animation: jv-spin 9s linear infinite reverse; border-color: rgba(150, 220, 255, 0.4); border-width: 0.125rem 0.5rem; }
+.jv-orb i:nth-child(3) { animation: jv-breathe 2.4s ease-in-out infinite; border-color: rgba(110, 200, 255, 0.25); }
+.jarvis.speaking .jv-orb i:nth-child(3) { animation: jv-ripple 1.1s ease-out infinite; }
+.jarvis.thinking .jv-orb i:nth-child(1) { animation-duration: 1.4s; }
+@keyframes jv-spin { to { transform: rotate(360deg); } }
+@keyframes jv-breathe { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.12); opacity: 1; } }
+@keyframes jv-ripple { from { transform: scale(0.8); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
+.jv-text p { margin: 0; text-shadow: 0 0.125rem 1rem rgba(0, 0, 0, 0.8); }
+.jv-heard { font-size: 2rem; line-height: 2.5rem; color: rgba(200, 225, 255, 0.75); font-style: italic; min-height: 2.5rem; }
+.jv-say { margin-top: 0.75rem !important; font-size: 2.625rem; line-height: 3.25rem; font-weight: 650; color: #fff; max-width: 80rem; }
