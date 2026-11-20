@@ -2449,3 +2449,29 @@ html.look-space.jv-searching .jvh-results { top: 44rem; }
 /* a console's own picture on its tile (the PlayStation 5): black glass, the logo in white */
 html.look-space.dock-banners.theme-night .face.input-img { background: radial-gradient(120% 100% at 50% 0%, #1a1a1f, #000 70%); display: flex; align-items: center; justify-content: center; }
 html.look-space.dock-banners.theme-night .face.input-img img { width: 78%; height: auto; object-fit: contain; mix-blend-mode: screen; }
+
+/* ================= Couch TV 2, lighter (Nov 2026) =================
+   The same look with less for the TV's graphics chip to draw, so moving about feels smoother. */
+/* only the layers that move get a layer of their own; the still sky and Earth ride on their pan */
+.space img { will-change: auto; }
+.space .sp-aurora, .space .sp-lights { will-change: transform, opacity; }
+/* while the remote is moving (html.space-nav, set by app.js), everything in the background holds
+   still, and moves on a moment after the last press */
+html.space-nav .space img, html.space-nav .sp-pan, html.space-nav .jvh-wave b, html.space-nav .jvh-orb::before,
+html.space-nav .news-live { animation-play-state: paused; }
+/* Home settings: the home behind the panel is dimmed, not blurred (a blur of the whole screen was the heaviest thing here) */
+html.look-space.setting .space, html.look-space.setting header.top, html.look-space.setting main.home {
+  filter: none; opacity: 0.4; transition: opacity 300ms ease;
+}
+/* the apps the remote is not on: their glass rim, without the big soft shadow under each */
+html.look-space.dock-banners.theme-night .app:not(.focus) .face {
+  box-shadow: inset 0 0.09rem 0 rgba(255, 255, 255, 0.55), inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.18);
+}
+/* the focused app: its colour glowing under it, drawn as a soft gradient instead of a live blur, and one shadow */
+html.look-space.dock-banners.theme-night .app.focus::before { filter: none; opacity: 0.6; }
+html.look-space.dock-banners.theme-night .app.focus:not(.lifted) .face { box-shadow: 0 1rem 2.5rem var(--glow, rgba(150, 190, 255, 0.45)); }
+/* a quicker, calmer step from app to app and row to row */
+html.look-space.space-row .grid .app { transition: transform 240ms cubic-bezier(0.22, 0.8, 0.24, 1), opacity 300ms ease; }
+html.look-space.space-row .grid { transition: transform 300ms cubic-bezier(0.22, 0.8, 0.24, 1); }
+/* the settings button stays out of the way under the panel */
+html.look-space.setting .quick { opacity: 0; }

@@ -1419,7 +1419,7 @@
     var dt = newsT ? Math.min(0.1, (t - newsT) / 1000) : 0;
     newsT = t;
     if (!newsVisible() || zone === "news" || covered() || newsHalf <= 0) return;
-    if (document.documentElement.classList.contains("space-hold")) return;
+    if (document.documentElement.classList.contains("space-hold") || document.documentElement.classList.contains("space-nav")) return;
     newsX = (newsX + dt * NEWS_SPEED * (window.innerWidth / 1920)) % newsHalf;
     var track = $("news-track");
     track.style.transition = "none";
@@ -4489,6 +4489,10 @@
     var wxAt = SECS.map(function (x) { return x[0]; }).indexOf("weather");
     if (SPACE && wxAt >= 0) { SECS.splice(wxAt, 1); if (SET.sec >= SECS.length) SET.sec = 0; }
     else if (!SPACE && wxAt < 0) SECS.splice(2, 0, ["weather", "cloud"]);
+    // Space shows no people switcher either (Couch TV 2)
+    var pAt = SECS.map(function (x) { return x[0]; }).indexOf("people");
+    if (SPACE && pAt >= 0) { SECS.splice(pAt, 1); if (SET.sec >= SECS.length) SET.sec = 0; }
+    else if (!SPACE && pAt < 0) SECS.splice(SECS.map(function (x) { return x[0]; }).indexOf("apps") + 1, 0, ["people", "person"]);
   }
   var SECS = [["language", "globe"], ["location", "pin"], ["weather", "cloud"], ["look", "look"],
     ["apps", "apps"], ["people", "person"], ["quick", "bolt"], ["about", "info"]];
@@ -4744,20 +4748,69 @@
 
   // ---- look, scenes and the household's own photos ----
   var SECS_STEPS = [10, 15, 20, 30, 45, 60, 120];
+  // Smart Idle & OLED-safe Ambient Mode: in every look, so its own helper
+  function smartIdleRows(rows) {
+    rows.push(head(t("smart_idle_head")));
+    rows.push({ kind: "toggle", key: "smart-idle-on", label: t("smart_idle_on"), sub: t("smart_idle_on_sub"),
+      value: SMART_IDLE.enabled ? t("on") : t("off"), act: function () {
+        SMART_IDLE.enabled = !SMART_IDLE.enabled;
+        ST.smart_idle = SMART_IDLE; saveSettings(); resetSmartIdle(); renderSettings();
+      } });
+    rows.push({ kind: "cycle", key: "smart-idle-home", label: t("smart_idle_home"),
+      value: SMART_IDLE.home_idle_minutes ? t("n_min", { n: SMART_IDLE.home_idle_minutes }) : t("off"), act: function () {
+        var i = SMART_IDLE_HOME_STEPS.indexOf(SMART_IDLE.home_idle_minutes);
+        SMART_IDLE.home_idle_minutes = SMART_IDLE_HOME_STEPS[(i + 1) % SMART_IDLE_HOME_STEPS.length];
+        ST.smart_idle = SMART_IDLE; saveSettings(); resetSmartIdle(); renderSettings();
+      } });
+    rows.push({ kind: "cycle", key: "smart-idle-action", label: t("smart_idle_action"),
+      value: t("smart_idle_act_" + SMART_IDLE.home_action), act: function () {
+        var i = SMART_IDLE_ACTIONS.indexOf(SMART_IDLE.home_action);
+        SMART_IDLE.home_action = SMART_IDLE_ACTIONS[(i + 1) % SMART_IDLE_ACTIONS.length];
+        ST.smart_idle = SMART_IDLE; saveSettings(); renderSettings();
+      } });
+    rows.push({ kind: "cycle", key: "smart-idle-paused", label: t("smart_idle_paused"), sub: t("smart_idle_paused_sub"),
+      value: SMART_IDLE.paused_idle_minutes ? t("n_min", { n: SMART_IDLE.paused_idle_minutes }) : t("off"), act: function () {
+        var i = SMART_IDLE_PAUSED_STEPS.indexOf(SMART_IDLE.paused_idle_minutes);
+        SMART_IDLE.paused_idle_minutes = SMART_IDLE_PAUSED_STEPS[(i + 1) % SMART_IDLE_PAUSED_STEPS.length];
+        ST.smart_idle = SMART_IDLE; saveSettings(); renderSettings();
+      } });
+    rows.push({ kind: "toggle", key: "smart-idle-quiet", label: t("smart_idle_quiet"), sub: t("smart_idle_quiet_sub"),
+      value: SMART_IDLE.quiet_hours.enabled ? t("on") : t("off"), act: function () {
+        SMART_IDLE.quiet_hours.enabled = !SMART_IDLE.quiet_hours.enabled;
+        ST.smart_idle = SMART_IDLE; saveSettings(); renderSettings();
+      } });
+  }
+  // Space (Couch TV 2): only what changes this look. The scenes, photos, glass, video, Keep watching,
+  // Now playing and soundscape rows belong to the other looks and are left out here.
+  function spaceLookRows(rows) {
+    rows.push({ kind: "toggle", key: "news", label: t("news_ticker"), sub: t("news_ticker_sub"), value: ST.news !== false ? t("on") : t("off"), act: function () {
+      ST.news = ST.news === false; saveSettings(); newsSync();
+    } });
+    rows.push({ kind: "cycle", key: "clock", label: t("clock"), value: CLOCK24 ? t("clock_24") : t("clock_12"), act: function () {
+      CLOCK24 = !CLOCK24; ST.clock = CLOCK24 ? "24h" : "12h"; saveSettings(); glassShown = ""; clock();
+    } });
+    rows.push({ kind: "toggle", key: "lighter", label: t("lighter"), value: LIGHTER ? t("on") : t("off"), act: function () {
+      LIGHTER = !LIGHTER; ST.lighter = LIGHTER; saveSettings();
+      document.documentElement.classList.toggle("lighter", LIGHTER); ambientSync(); movingTiles(); renderShelf(); paintFocus();
+    } });
+    rows.push(head(t("sound_head")));
+    rows.push({ kind: "cycle", key: "nav-sound", label: t("nav_sound"), value: t("nav_sound_" + SOUND_STYLE), act: function () {
+      SOUND_STYLE = SOUND_STYLE === "system" ? "soft" : SOUND_STYLE === "soft" ? "off" : "system";
+      ST.nav_sound = SOUND_STYLE; saveSettings(); blip(0, 0);
+    } });
+    rows.push(head(t("ambient_head")));
+    rows.push({ kind: "action", key: "ambient", label: t("ambient_settings"), sub: t("ambient_settings_sub"),
+      act: function () { openAmbientSettings(); } });
+    smartIdleRows(rows);
+    return rows;
+  }
   function lookRows() {
     var look = lookSetting(), st = sceneState(), rows = [head(t("look_head"))];
     ["night", "space", "oled", "classic"].forEach(function (id) {
       rows.push({ kind: "choice", key: "look:" + id, label: t("look_" + id), sub: t("look_" + id + "_sub"), checked: look === id,
         act: function () { ST.look = id; keep("tvhome.look", id); saveSettings(); } });
     });
-    if (look === "space") [["live", t("live_tv")]].forEach(function (x) {
-      rows.push({ kind: "toggle", key: x[0], label: x[1], sub: t("live_tv_sub"), value: ST[x[0]] !== false ? t("on") : t("off"), act: function () {
-        ST[x[0]] = ST[x[0]] === false; saveSettings(); liveSync();
-      } });
-    });
-    if (look === "space") rows.push({ kind: "toggle", key: "news", label: t("news_ticker"), sub: t("news_ticker_sub"), value: ST.news !== false ? t("on") : t("off"), act: function () {
-      ST.news = ST.news === false; saveSettings(); newsSync();
-    } });
+    if (look === "space") return spaceLookRows(rows);
     if (look === "classic") {
       rows.push({ kind: "toggle", key: "keep-photo", label: t("keep_photo"), sub: t("keep_photo_sub"), value: KEEP_PHOTO ? t("on") : t("off"), act: function () {
         KEEP_PHOTO = !KEEP_PHOTO; ST.keep_photo = KEEP_PHOTO;
@@ -4800,36 +4853,7 @@
     rows.push(head(t("ambient_head")));
     rows.push({ kind: "action", key: "ambient", label: t("ambient_settings"), sub: t("ambient_settings_sub"),
       act: function () { openAmbientSettings(); } });
-    // Smart Idle & OLED-safe Ambient Mode
-    rows.push(head(t("smart_idle_head")));
-    rows.push({ kind: "toggle", key: "smart-idle-on", label: t("smart_idle_on"), sub: t("smart_idle_on_sub"),
-      value: SMART_IDLE.enabled ? t("on") : t("off"), act: function () {
-        SMART_IDLE.enabled = !SMART_IDLE.enabled;
-        ST.smart_idle = SMART_IDLE; saveSettings(); resetSmartIdle(); renderSettings();
-      } });
-    rows.push({ kind: "cycle", key: "smart-idle-home", label: t("smart_idle_home"),
-      value: SMART_IDLE.home_idle_minutes ? t("n_min", { n: SMART_IDLE.home_idle_minutes }) : t("off"), act: function () {
-        var i = SMART_IDLE_HOME_STEPS.indexOf(SMART_IDLE.home_idle_minutes);
-        SMART_IDLE.home_idle_minutes = SMART_IDLE_HOME_STEPS[(i + 1) % SMART_IDLE_HOME_STEPS.length];
-        ST.smart_idle = SMART_IDLE; saveSettings(); resetSmartIdle(); renderSettings();
-      } });
-    rows.push({ kind: "cycle", key: "smart-idle-action", label: t("smart_idle_action"),
-      value: t("smart_idle_act_" + SMART_IDLE.home_action), act: function () {
-        var i = SMART_IDLE_ACTIONS.indexOf(SMART_IDLE.home_action);
-        SMART_IDLE.home_action = SMART_IDLE_ACTIONS[(i + 1) % SMART_IDLE_ACTIONS.length];
-        ST.smart_idle = SMART_IDLE; saveSettings(); renderSettings();
-      } });
-    rows.push({ kind: "cycle", key: "smart-idle-paused", label: t("smart_idle_paused"), sub: t("smart_idle_paused_sub"),
-      value: SMART_IDLE.paused_idle_minutes ? t("n_min", { n: SMART_IDLE.paused_idle_minutes }) : t("off"), act: function () {
-        var i = SMART_IDLE_PAUSED_STEPS.indexOf(SMART_IDLE.paused_idle_minutes);
-        SMART_IDLE.paused_idle_minutes = SMART_IDLE_PAUSED_STEPS[(i + 1) % SMART_IDLE_PAUSED_STEPS.length];
-        ST.smart_idle = SMART_IDLE; saveSettings(); renderSettings();
-      } });
-    rows.push({ kind: "toggle", key: "smart-idle-quiet", label: t("smart_idle_quiet"), sub: t("smart_idle_quiet_sub"),
-      value: SMART_IDLE.quiet_hours.enabled ? t("on") : t("off"), act: function () {
-        SMART_IDLE.quiet_hours.enabled = !SMART_IDLE.quiet_hours.enabled;
-        ST.smart_idle = SMART_IDLE; saveSettings(); renderSettings();
-      } });
+    smartIdleRows(rows);
     rows.push(head(t("soundscape")));
     var curSound = window.Soundscape ? window.Soundscape.current() : SOUND_TYPE;
     rows.push({
@@ -5871,8 +5895,18 @@
     });
   }
 
+  // Couch TV 2: while the remote is moving, the sky, the aurora and the news line hold still, so the
+  // TV's graphics chip only has the focus to draw; they move on a moment after the last press
+  var navHoldT = null;
+  function navHold() {
+    if (!SPACE) return;
+    document.documentElement.classList.add("space-nav");
+    clearTimeout(navHoldT);
+    navHoldT = setTimeout(function () { document.documentElement.classList.remove("space-nav"); }, 1500);
+  }
   document.addEventListener("keydown", function (e) {
     lastKeyAt = Date.now();
+    navHold();
     resetSmartIdle();
     if (screenOffActive) {
       e.preventDefault();
