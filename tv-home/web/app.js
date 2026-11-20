@@ -1419,7 +1419,7 @@
     var dt = newsT ? Math.min(0.1, (t - newsT) / 1000) : 0;
     newsT = t;
     if (!newsVisible() || zone === "news" || covered() || newsHalf <= 0) return;
-    if (document.documentElement.classList.contains("space-hold") || document.documentElement.classList.contains("space-nav")) return;
+    if (document.documentElement.classList.contains("space-hold")) return;
     newsX = (newsX + dt * NEWS_SPEED * (window.innerWidth / 1920)) % newsHalf;
     var track = $("news-track");
     track.style.transition = "none";
@@ -5895,7 +5895,7 @@
     });
   }
 
-  // Couch TV 2: while the remote is moving, the sky, the aurora and the news line hold still, so the
+  // Couch TV 2: while the remote is moving, the sky, the aurora and the Earth hold still, so the
   // TV's graphics chip only has the focus to draw; they move on a moment after the last press
   var navHoldT = null;
   function navHold() {

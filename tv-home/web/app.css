@@ -2455,10 +2455,9 @@ html.look-space.dock-banners.theme-night .face.input-img img { width: 78%; heigh
 /* only the layers that move get a layer of their own; the still sky and Earth ride on their pan */
 .space img { will-change: auto; }
 .space .sp-aurora, .space .sp-lights { will-change: transform, opacity; }
-/* while the remote is moving (html.space-nav, set by app.js), everything in the background holds
-   still, and moves on a moment after the last press */
-html.space-nav .space img, html.space-nav .sp-pan, html.space-nav .jvh-wave b, html.space-nav .jvh-orb::before,
-html.space-nav .news-live { animation-play-state: paused; }
+/* while the remote is moving (html.space-nav, set by app.js), the sky, the aurora and the Earth hold
+   still, and move on a moment after the last press. The news line and Jarvis keep moving. */
+html.space-nav .space img, html.space-nav .sp-pan { animation-play-state: paused; }
 /* Home settings: the home behind the panel is dimmed, not blurred (a blur of the whole screen was the heaviest thing here) */
 html.look-space.setting .space, html.look-space.setting header.top, html.look-space.setting main.home {
   filter: none; opacity: 0.4; transition: opacity 300ms ease;
